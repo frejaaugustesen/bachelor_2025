@@ -20,10 +20,6 @@ islet28.mtx <- ReadMtx("data_raw/motakis/Islet28/Solo.out/Gene/raw/matrix.mtx",
                    "data_raw/motakis/Islet28/Solo.out/Gene/raw/barcodes.tsv",
                    "data_raw/motakis/Islet28/Solo.out/Gene/raw/features.tsv")
 
-# find empty droplets
-remotes::install_github("madsen-lab/valiDrops")
-library(valiDrops)
-
 # creating plot and threshold
 threshold <- valiDrops::rank_barcodes(islet28.mtx, type = "UMI") # tager virkelig lang tid!
 
@@ -45,90 +41,117 @@ islet28 <- readRDS(here::here("data/seurat_objects/motakis/islet28.rds"))
 islet28[["percent.mt"]] <- PercentageFeatureSet(islet28, pattern = "^MT-")
 
 ## histograms ----
-# creating dataframe of islet28 ti make histograms
-islet28.df <- as.data.frame(islet28@meta.data)
-head(islet28.df)
 
 ### nCount_RNA
-ggplot(data = islet28.df, aes(x=nCount_RNA)) +
+ggplot(data = islet28@meta.data, aes(x=nCount_RNA)) +
   geom_histogram(bins = 200) + 
-  geom_vline(xintercept = 1500)
+  geom_vline(xintercept = 1200)
 
 
 ### nFeatures_RNA
-ggplot(data = islet28.df, aes(x=nFeature_RNA) +
-         geom_histogram(bins = 100)))
+ggplot(data = islet28@meta.data, aes(x=nFeature_RNA)) +
+  geom_histogram(bins = 100) + 
+  geom_vline(xintercept = 800)
   
 
 ### percent.mt
-ggplot(data = islet28.df, aes(x=percent.mt)) +
+ggplot(data = islet28@meta.data, aes(x=percent.mt)) +
   geom_histogram(bins = 100) +
   geom_vline(xintercept = 15)
 
 
 ## subsetting data ----
 # remember to asses histograms when choosing thresholds
-islet28 <- subset(islet28, subset = nFeature_RNA >= 1000 & 
+islet28 <- subset(islet28, subset = nFeature_RNA >= 800 & 
                     percent.mt < 15 &
-                    nCount_RNA >= 1500 & nCount_RNA <= 40000)
+                    nCount_RNA >= 1200 & nCount_RNA <= 40000)
 
 ## kompleksitet af celler (nFeature/nCount) ----
 islet28@meta.data$log10complexity <- log10(islet28@meta.data$nFeature_RNA)/
   log10(islet28@meta.data$nCount_RNA)
 
-hist(islet28@meta.data$log10complexity, )
-
 ggplot(data = islet28@meta.data, aes(x=log10complexity)) +
   geom_histogram(bins = 100) +
   geom_vline(xintercept = 0.80, col = "red")
 
-## doublets (udskudt) ----
+## vionlinplots overview ----
+VlnPlot(islet28, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
+## normalizing data ----
+islet28 <- NormalizeData(islet28)
+
+## variable features ----
+islet28 <- FindVariableFeatures(islet28, selection.method = "vst", nfeatures = 2000)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(islet28), 10)
+
+# plot variable features with and without labels
+varfeat_plot_28 <- VariableFeaturePlot(islet28)
+varfeat_plot_28_2 <- LabelPoints(plot = varfeat_plot_28, points = top10, repel = TRUE)
+
+## scaling data and PCA ----
+all.genes <- rownames(islet28)
+islet28 <- ScaleData(islet28, features = all.genes)
+
+# PCA
+islet28 <- RunPCA(islet28, features = VariableFeatures(object = islet28))
+
+# assesing important PCs
+ElbowPlot(islet28) # 1:16
 
 ## marker genes ----
+islet28 <- FindNeighbors(islet28, dims = 1:16)
+islet28 <- FindClusters(islet28, resolution = 0.6)
+
+head(Idents(islet28), 5)
 
 ## clustering of cells ----
+islet28 <- RunUMAP(islet28, dims = 1:16)
 
+DimPlot(islet28, reduction = "umap")
 
-#  pancreas azimuth -------------------------------------------------------
+# find markers
+islet28.markers <- FindAllMarkers(islet28, only.pos = TRUE)
 
-panc_data <-readRDS("test_data/enge.rds")
-str(panc_data)
+saveRDS(islet28.markers, file = here::here("data/rds_files/islet28/islet28.markers.rds"))
+saveRDS(islet28, file = here::here("data/seurat_objects/motakis/islet28/islet28_QC.rds"))
 
-panc_df <- as.data.frame(panc_data@meta.data)
+islet28.markers %>%
+  group_by(cluster) %>%
+  dplyr::filter(avg_log2FC > 1)
 
-ggplot(data = panc_df, aes(x=nCount_RNA)) +
-  geom_histogram(bins = 100)
+VlnPlot(islet28, features = c("CYSTM1", "CRYBA2"))
 
-ggplot(data = panc_df, aes(x=nFeature_RNA)) +
-  geom_histogram(bins = 100)
+# FeaturePlots
 
-head(panc_data@assays$RNA$data, 10)
+FeaturePlot(islet28, features = "RPL21")
 
-# using guide
+FeaturePlot(islet28, features = beta)
 
-panc_data <- FindVariableFeatures(panc_data, 
-                                  selection.method = "vst", nfeatures = 2000)
+# markers for each cluster (tror at cluster 1, 4 og 6 er beta)
+# cluster nul anderledes 1 og 2
+cluster0.markers <- FindMarkers(islet28, ident.1 = 0)
+head(cluster0.markers, n = 5) # måske PPP1R1A (alfa)
 
-top10 <- head(VariableFeatures(panc_data), 10)
+# beta
+beta_markers_in_clusters <- islet28.markers[islet28.markers$gene 
+                                            %in% beta, ]
+table(beta_markers_in_clusters$cluster) # 1, 11 og 12 (6 og 4)
 
-plot1 <- VariableFeaturePlot(panc_data)
-plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
-plot1 + plot2
+# aplha
+alpha_markers_in_clusters <- islet28.markers[islet28.markers$gene 
+                                            %in% alpha, ]
+table(alpha_markers_in_clusters$cluster) # 0 (3)
 
-# scaling data
-all.genes <- rownames(panc_data)
-panc_data <- ScaleData(panc_data, features = all.genes)
+# delta
+delta_markers_in_clusters <- islet28.markers[islet28.markers$gene 
+                                             %in% delta, ]
+table(delta_markers_in_clusters$cluster) # 5 og 12
 
-# pca
-panc_data <- RunPCA(panc_data, features = VariableFeatures(object = panc_data))
+# gamma
+gamma_markers_in_clusters <- islet28.markers[islet28.markers$gene 
+                                             %in% gamma, ]
+table(gamma_markers_in_clusters$cluster) # 5
 
-ElbowPlot(panc_data)
-
-# clustering
-panc_data <- FindNeighbors(panc_data, dims = 1:13)
-panc_data <- FindClusters(panc_data, resolution = 0.5)
-
-panc_data <- RunUMAP(panc_data, dims = 1:13)
-
-DimPlot(panc_data, reduction = "umap")
 

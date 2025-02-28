@@ -1,8 +1,7 @@
 library(BiocManager)
-library(scDblFinder)
+library(valiDrops)
 library(Seurat)
 library(remotes)
-library(rJOINTLY)
 library(qs)
 
 # XGBoost

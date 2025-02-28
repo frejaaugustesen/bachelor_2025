@@ -45,6 +45,10 @@ library(xgboost) # for building XGBoost model
 library(e1071)     # for skewness 
 library(cowplot) # for combining multiple plots 
 
+# find empty droplets
+remotes::install_github("madsen-lab/valiDrops")
+library(valiDrops)
+
 # loading sander seurat object -----------------------------------------------
 sander <- qread("data/seurat_objects/wang_sander_merged.qs")
 
