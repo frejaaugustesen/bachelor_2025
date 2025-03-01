@@ -155,3 +155,16 @@ gamma_markers_in_clusters <- islet28.markers[islet28.markers$gene
 table(gamma_markers_in_clusters$cluster) # 5
 
 
+# random sample selection -------------------------------------------------
+
+meta <- read.csv(here::here("data_raw/motakis/motakis_meta.csv"), sep = ";")
+View(meta)
+
+table(meta$disease)
+
+samples <- meta %>%
+  group_by(disease) %>% # grupperer data
+  sample_n(3)  %>% # udvælger tilfældigt 3 samples
+  ungroup() 
+
+print(samples %>% select(donor, disease))
