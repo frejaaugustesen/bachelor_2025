@@ -34,31 +34,35 @@ counts.subset <- islet28.mtx[, colnames(islet28.mtx) %in% rank.pass]
 islet28 <- CreateSeuratObject(counts.subset, project = "islet28") #HUSK
 
 saveRDS(islet28, file = here::here("data/seurat_objects/motakis/islet28.rds"))
-islet28 <- readRDS(here::here("data/seurat_objects/motakis/islet28.rds"))
+islet28_raw <- readRDS(here::here("data/seurat_objects/motakis/islet28.rds"))
 islet28 <- readRDS(here::here("data/seurat_objects/motakis/islet28/islet28_QC.rds"))
 
 # Islet28 QC (motakis) -----------------------------------------------------
 
-islet28[["percent.mt"]] <- PercentageFeatureSet(islet28, pattern = "^MT-")
+islet28_raw[["percent.mt"]] <- PercentageFeatureSet(islet28_raw, pattern = "^MT-")
 
 ## histograms ----
 
 ### nCount_RNA
-ggplot(data = islet28@meta.data, aes(x=nCount_RNA)) +
+ggplot(data = islet28_raw@meta.data, aes(x=nCount_RNA)) +
   geom_histogram(bins = 200) + 
   geom_vline(xintercept = 1200)
 
 
 ### nFeatures_RNA
-ggplot(data = islet28@meta.data, aes(x=nFeature_RNA)) +
+ggplot(data = islet28_raw@meta.data, aes(x=nFeature_RNA)) +
   geom_histogram(bins = 100) + 
   geom_vline(xintercept = 800)
   
 
 ### percent.mt
-ggplot(data = islet28@meta.data, aes(x=percent.mt)) +
+ggplot(data = islet28_raw@meta.data, aes(x=percent.mt)) +
   geom_histogram(bins = 100) +
   geom_vline(xintercept = 15)
+
+### exon intron ratio
+ggplot(data = islet28_raw@meta.data, aes(x=exon_exonintron)) +
+  geom_histogram(bins = 100)
 
 
 ## subsetting data ----
@@ -77,6 +81,63 @@ ggplot(data = islet28@meta.data, aes(x=log10complexity)) +
 
 ## vionlinplots overview ----
 VlnPlot(islet28, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
+## exon-intron count ----
+
+# loader data ind som matrix (rækker = gener, kolonner = celler)
+mtx_gene_islet28 <- Seurat::ReadMtx(mtx = "data_raw/motakis/Islet28/Solo.out/Gene/raw/matrix.mtx",
+                            cells = "data_raw/motakis/Islet28/Solo.out/Gene/raw/barcodes.tsv",
+                            features = "data_raw/motakis/Islet28/Solo.out/Gene/raw/features.tsv")
+
+mtx_genefull_islet28 <- Seurat::ReadMtx(mtx = "data_raw/motakis/Islet28/Solo.out/GeneFull/raw/matrix.mtx",
+                                cells = "data_raw/motakis/Islet28/Solo.out/GeneFull/raw/barcodes.tsv",
+                                features = "data_raw/motakis/Islet28/Solo.out/GeneFull/raw/features.tsv")
+
+# threshold har en df ("ranks") med 3 kolonner, hvor den første er barcode, næste er count 
+# (faldende) og sidste er rank (stigende), samt en værdi der hedder "lower.threshold" (647)
+threshold <- valiDrops::rank_barcodes(mtx_gene_islet28) 
+
+# rank.pass er en liste over de barcodes som er over/= "lower.threshold" værdien
+# man beholder rownames fra df "ranks", hvis værdien i "counts"-kolonne er >= lower threshold
+rank.pass <- BiocGenerics::rownames(threshold$ranks
+                                    [ threshold$ranks$counts >= threshold$lower.threshold, ])
+
+# tager de kolonne-navne (celler) fra mtx gene som også er tilstede i rank.pass.
+# subsettet matrix med kun de celler som er over threshold
+mtx_gene_sub <- mtx_gene[, colnames(mtx_gene) %in% rank.pass]
+
+# subsetter matrix med de navne som også er til stede i mtx_gene_sub
+# ville det her give det samme at subsette med rank.pass?
+# nu indeholder de to sub matrix ihvertfald kun de samme celler
+mtx_genefull_sub <- mtx_genefull[, colnames(mtx_genefull) %in% colnames(mtx_gene_sub)]
+
+# calcuclate exon-intron / exon ratio
+# tester at alle celler er de samme i begge sub matrix - havde givet false hvis de ikke var
+all.equal(colnames(mtx_gene_sub), colnames(mtx_genefull_sub))
+
+# colSums(mtx_gene_sub) = samlet antal gener udtrykt i hver celle
+# samlede antal gener udtrykt i hver celle fra gene og genefull divideret og lavet til en df
+# dette er exon / exon-intron ratioen
+contrast <- colSums(mtx_gene_sub) / colSums(mtx_genefull_sub) %>% as.data.frame()
+
+# kollonen med ratioen navngives
+colnames(contrast) <- "exon_exonintron_ratio"
+
+# laver seurat objekt med sub matrix
+seurat_obj <- Seurat::CreateSeuratObject(counts = mtx_gene_sub,
+                                         assay = "RNA")
+
+# tjekker at der er de samme celler i contrast dataframe og i seurat objektet
+all.equal(rownames(contrast), rownames(seurat_obj@meta.data))
+
+# tilføjer ratioen til meta data
+seurat_obj@meta.data$exon_exonintron <- contrast$exon_exonintron
+
+# overføre til islet28 eget data og seurat
+all.equal(rownames(contrast), rownames(islet28_raw@meta.data))
+# den er ens med den rå meta data - skal dette så gøres inden der subsettes??
+islet28_raw@meta.data$exon_exonintron <- contrast$exon_exonintron
+
 
 ## normalizing data ----
 islet28 <- NormalizeData(islet28)
