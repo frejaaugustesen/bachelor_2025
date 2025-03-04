@@ -7,6 +7,7 @@
 # setup ------------------------------------------------------------------
 source(here::here("R/set_up.R"))
 source(here::here("R/package_load.R"))
+source(here::here("R/cell_types.R"))
 
 set.seed(100)
 
@@ -39,7 +40,7 @@ islet28 <- readRDS(here::here("data/seurat_objects/motakis/islet28/islet28_QC.rd
 
 # Islet28 QC (motakis) -----------------------------------------------------
 
-islet28_raw[["percent.mt"]] <- PercentageFeatureSet(islet28_raw, pattern = "^MT-")
+seurat_obj[["percent.mt"]] <- PercentageFeatureSet(seurat_obj, pattern = "^MT-")
 
 ## histograms ----
 
@@ -56,20 +57,21 @@ ggplot(data = islet28_raw@meta.data, aes(x=nFeature_RNA)) +
   
 
 ### percent.mt
-ggplot(data = islet28_raw@meta.data, aes(x=percent.mt)) +
+ggplot(data = seurat_obj@meta.data, aes(x=percent.mt)) +
   geom_histogram(bins = 100) +
   geom_vline(xintercept = 15)
 
 ### exon intron ratio
-ggplot(data = islet28_raw@meta.data, aes(x=exon_exonintron)) +
+ggplot(data = seurat_obj@meta.data, aes(x=exon_exonintron)) +
   geom_histogram(bins = 100)
 
 
 ## subsetting data ----
 # remember to asses histograms when choosing thresholds
-islet28 <- subset(islet28, subset = nFeature_RNA >= 800 & 
+seurat_obj <- subset(seurat_obj, subset = nFeature_RNA >= 800 & 
                     percent.mt < 15 &
-                    nCount_RNA >= 1200 & nCount_RNA <= 40000)
+                    nCount_RNA >= 10000 & nCount_RNA <= 40000 & 
+                    exon_exonintron <= 1)
 
 ## kompleksitet af celler (nFeature/nCount) ----
 islet28@meta.data$log10complexity <- log10(islet28@meta.data$nFeature_RNA)/
@@ -85,17 +87,17 @@ VlnPlot(islet28, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol 
 ## exon-intron count ----
 
 # loader data ind som matrix (rækker = gener, kolonner = celler)
-mtx_gene_islet28 <- Seurat::ReadMtx(mtx = "data_raw/motakis/Islet28/Solo.out/Gene/raw/matrix.mtx",
+mtx_gene <- Seurat::ReadMtx(mtx = "data_raw/motakis/Islet28/Solo.out/Gene/raw/matrix.mtx",
                             cells = "data_raw/motakis/Islet28/Solo.out/Gene/raw/barcodes.tsv",
                             features = "data_raw/motakis/Islet28/Solo.out/Gene/raw/features.tsv")
 
-mtx_genefull_islet28 <- Seurat::ReadMtx(mtx = "data_raw/motakis/Islet28/Solo.out/GeneFull/raw/matrix.mtx",
+mtx_genefull <- Seurat::ReadMtx(mtx = "data_raw/motakis/Islet28/Solo.out/GeneFull/raw/matrix.mtx",
                                 cells = "data_raw/motakis/Islet28/Solo.out/GeneFull/raw/barcodes.tsv",
                                 features = "data_raw/motakis/Islet28/Solo.out/GeneFull/raw/features.tsv")
 
 # threshold har en df ("ranks") med 3 kolonner, hvor den første er barcode, næste er count 
 # (faldende) og sidste er rank (stigende), samt en værdi der hedder "lower.threshold" (647)
-threshold <- valiDrops::rank_barcodes(mtx_gene_islet28) 
+threshold <- valiDrops::rank_barcodes(mtx_gene) 
 
 # rank.pass er en liste over de barcodes som er over/= "lower.threshold" værdien
 # man beholder rownames fra df "ranks", hvis værdien i "counts"-kolonne er >= lower threshold
@@ -313,8 +315,40 @@ View(meta)
 table(meta$disease)
 
 samples <- meta %>%
-  group_by(disease) %>% # grupperer data
-  sample_n(3)  %>% # udvælger tilfældigt 3 samples
+  group_by(disease, sex) %>% # grupperer data
+  slice_sample(n = 2)  %>% # udvælger tilfældigt 3 samples
   ungroup() 
 
-print(samples %>% select(donor, disease))
+print(samples %>% 
+        select(donor, disease, sex))
+
+# lav QC for alle prøverne individuelt (i hver sit script)
+# gem alle plots (QC, heatmaps, dotplots, threshold, PCA (elbowplots))
+
+
+# dotplots med isabell ----------------------------------------------------
+
+DotPlot(islet28, features = list("beta"=beta, "alpha" = alpha))+
+  ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
+                                  high = "#A83708FF")
+# lav plot med tre gener per celletype selv (lav liste med 3 gener per celletype, så dotplottet bliver delt pænt op)
+
+DoHeatmap(islet28, features = c(beta, alpha, delta, gamma, epsilon, cycling, ductal, 
+                                endothelial, immune, quiescent_stellate,
+                                schwann, activated_stellate, acinar), size = 2) +
+  theme(text = element_text(size = 6))
+# brug heatmap som ekstra plot efter dotplottet
+# nemmere at adskille og ud fra avarage
+
+DotPlot(islet28, features = list("beta"=beta, "alpha" = alpha), 
+        idents = new.cluster.ids)+
+  ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
+                                  high = "#A83708FF")
+
+# senere kigger vi på en anden måde at finde markergener på
+
+# Azimuth reference mapping -----------------------------------------------
+remotes::install_github("satijalab/azimuth")
+library(Azimuth)
+
+        
