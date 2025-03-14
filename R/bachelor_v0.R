@@ -333,7 +333,8 @@ saveRDS(samples, file = here::here("data/rds_files/selected_samples_df.rds"))
 DotPlot(islet28, features = list("beta"=beta, "alpha" = alpha))+
   ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
                                   high = "#A83708FF")
-# lav plot med tre gener per celletype selv (lav liste med 3 gener per celletype, så dotplottet bliver delt pænt op)
+# lav plot med tre gener per celletype selv (lav liste med 3 gener per celletype, 
+# så dotplottet bliver delt pænt op)
 
 DoHeatmap(islet28, features = c(beta, alpha, delta, gamma, epsilon, cycling, ductal, 
                                 endothelial, immune, quiescent_stellate,

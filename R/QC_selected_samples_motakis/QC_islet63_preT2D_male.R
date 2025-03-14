@@ -62,7 +62,8 @@ colnames(contrast) <- "exon_exonintron_ratio"
 
 # laver seurat objekt med sub matrix
 islet63 <- Seurat::CreateSeuratObject(counts = mtx_gene_sub,
-                                      assay = "RNA")
+                                      assay = "RNA",
+                                      project = "islet63")
 
 # tjekker at der er de samme celler i contrast dataframe og i seurat objektet
 all.equal(rownames(contrast), rownames(islet63@meta.data))
@@ -118,7 +119,7 @@ ggplot(data = islet63@meta.data, aes(x=log10complexity)) +
 islet63 <- subset(islet63, subset = nFeature_RNA >= 2000 & 
                     percent.mt < 20 &
                     nCount_RNA >= 11800 & nCount_RNA <= 40000 & 
-                    exon_exonintron <= 1)
+                    exon_exonintron <= 1 & log10complexity >= 0.80)
 
 # saving QC as seurat object - to get the previous histograms, load raw seurat
 saveRDS(islet63, file = here::here("data/seurat_objects/motakis/selected_samples/islet63_seurat_QC.rds"))
@@ -147,3 +148,106 @@ islet63 <- RunPCA(islet63, features = VariableFeatures(object = islet63))
 
 # assesing important PCs
 ElbowPlot(islet63) # 1:16
+
+# clustering  -------------------------------------------------------------
+
+## marker genes ----
+islet63 <- FindNeighbors(islet63, dims = 1:16)
+islet63 <- FindClusters(islet63, resolution = 0.6)
+
+## clustering of cells ----
+islet63 <- RunUMAP(islet63, dims = 1:16)
+
+DimPlot(islet63, reduction = "umap", label = TRUE)
+
+# Dotplots ----------------------------------------------------------------
+
+DotPlot1 <- DotPlot(islet63, 
+                    features = list("beta"=beta, "alpha" = alpha, 
+                                    "delta" = delta, "gamma" = gamma
+                    ))+
+  ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
+                                  high = "#A83708FF")+
+  theme(text = element_text(size = 10),
+        axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(size = 3.5))
+
+DotPlot2 <- DotPlot(islet63, 
+                    features = list("acinar" = acinar, "ductal" = ductal, 
+                                    "cycling" = cycling, "immune" = immune
+                    ))+
+  ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
+                                  high = "#A83708FF")+
+  theme(text = element_text(size = 10),
+        axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(size = 3.5))
+
+DotPlot3 <- DotPlot(islet63, 
+                    features = list("activated_stellate" = activated_stellate,
+                                    "endothelial" = endothelial, "epsilon" = epsilon,
+                                    "quiescent_stellate" = quiescent_stellate
+                    ))+
+  ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
+                                  high = "#A83708FF")+
+  theme(text = element_text(size = 10),
+        axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(size = 3.5))
+
+
+# Annotation --------------------------------------------------------------
+
+# cluster 0: acinar
+# cluster 1: alpha
+# cluster 2: ductal
+# cluster 3: acinar
+# cluster 4: delta
+# cluster 5: activated stellate
+# cluster 6: beta
+# cluster 7: immune
+
+
+## klade til annotering ----
+
+new.cluster.ids <- c("acinar", "alpha", "ductal", "acinar", "delta",
+                     "activated_stellate", "beta", "immune")
+
+
+names(new.cluster.ids) <- levels(islet63)
+islet63 <- RenameIdents(islet63, new.cluster.ids)
+DimPlot(islet63, reduction = "umap", label = TRUE, 
+        label.size = 3, pt.size = 0.5, repel = TRUE) + NoLegend()
+
+
+# small dotplots ----------------------------------------------------------
+acinar1 <- c("REG1B", "CELA3A", "CPA1")
+alpha1 <- c("GCG", "GC", "PCSK2")
+ductal1 <- c("MMP7", "CFTR", "ANXA4")
+delta1 <- c("SST", "RBP4", "LEPR")
+activated_stellate1 <- c("COL1A2", "COL3A1", "BGN")
+beta1 <- c("IAPP", "INS", "NPTX2")
+immune1 <- c("ACP5", "APOE", "C1QB")
+
+DotPlot(islet63, features = list("beta"=beta1, "alpha" = alpha1, "delta" = delta1,
+                                 "acinar" = acinar1, "ductal" = ductal1,
+                                 "activated_stellate" = activated_stellate1,
+                                 "immune" = immune1 
+                                 
+))+
+  ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
+                                  high = "#A83708FF")+
+  theme(text = element_text(size = 8),
+        axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(size = 4, 
+                                   angle = 90, vjust = 0.5, hjust = 0.5))
+
+
+
+
+# Heatmap -----------------------------------------------------------------
+
+DoHeatmap(islet63, features = c(beta, alpha, delta, gamma, epsilon, cycling, ductal, 
+                                endothelial, immune, quiescent_stellate,
+                                schwann, activated_stellate, acinar), size = 2) +
+  theme(text = element_text(size = 6))
+
+
