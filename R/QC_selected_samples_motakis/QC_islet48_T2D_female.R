@@ -210,15 +210,25 @@ DotPlot3 <- DotPlot(islet48,
 
 ## klade til annotering ----
 
-new.cluster.ids <- c("alpha", "alpha", "beta", "activated_stellate",
-                     "acinar", "ductal", "delta", "gamma", "endothelial",
-                     "immune")
+islet48@meta.data <- islet48@meta.data %>% dplyr::mutate(manual_anno = dplyr::case_when(
+  seurat_clusters %in% c(0, 1) ~ "alpha",
+  seurat_clusters %in% c(2) ~ "beta",
+  seurat_clusters %in% c(3) ~ "activated_stellate",
+  seurat_clusters %in% c(4) ~ "acinar",
+  seurat_clusters %in% c(7) ~"gamma",
+  seurat_clusters %in% c(5) ~ "ductal",
+  seurat_clusters %in% c(6) ~ "delta",
+  seurat_clusters %in% c(8) ~ "endothelial",
+  seurat_clusters %in% c(9) ~ "immune",
+))
 
+DimPlot(islet48, group.by = "manual_anno", 
+        reduction = "umap", label = TRUE, repel = TRUE) +
+  NoLegend()
 
-names(new.cluster.ids) <- levels(islet48)
-islet48 <- RenameIdents(islet48, new.cluster.ids)
-DimPlot(islet48, reduction = "umap", label = TRUE, 
-        label.size = 3, pt.size = 0.5, repel = TRUE) + NoLegend()
+DimPlot(islet48, group.by = "seurat_clusters", 
+        reduction = "umap", label = TRUE, repel = TRUE) +
+  NoLegend()
 
 
 # small dotplots ----------------------------------------------------------
@@ -255,5 +265,9 @@ DoHeatmap(islet48, features = c(beta, alpha, delta, gamma, epsilon, cycling, duc
                                  endothelial, immune, quiescent_stellate,
                                  schwann, activated_stellate, acinar), size = 2) +
   theme(text = element_text(size = 6))
+
+# Variable Feature Plot ---------------------------------------------------
+
+FeaturePlot(islet48, features = c("INS", "GCG", "SST", "PPY"), pt.size = 1)
 
 
