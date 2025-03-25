@@ -220,9 +220,9 @@ islet34@meta.data <- islet34@meta.data %>% dplyr::mutate(manual_anno = dplyr::ca
   seurat_clusters %in% c(7) ~ "beta/alpha",
   seurat_clusters %in% c(6) ~ "activated_stellate",
   seurat_clusters %in% c(4) ~ "acinar",
-  seurat_clusters %in% c(11) ~"quiescent_stellate/endothelial",
+  seurat_clusters %in% c(11) ~"endothelial/quiescent_stellate",
   seurat_clusters %in% c(9) ~"immune",
-  seurat_clusters %in% c(10) ~ "cycling",
+  seurat_clusters %in% c(10) ~ "cycling/alpha",
   seurat_clusters %in% c(2, 3) ~ "ductal",
   seurat_clusters %in% c(8) ~ "gamma",
   seurat_clusters %in% c(5) ~ "delta",
@@ -252,7 +252,7 @@ cycling1 <- c("UBE2C", "BIRC5", "CDKN3")
 quiescent_stellate1 <- c("ESAM", "IGFBP4", "CSRP2")
 endothelial1 <- c("PLVAP", "RGCC", "PECAM1")
 
-DotPlot(islet38, features = list("beta"=beta1, "alpha" = alpha1, "delta" = delta1,
+DotPlot(islet34, features = list("beta"=beta1, "alpha" = alpha1, "delta" = delta1,
                                  "acinar" = acinar1, "ductal" = ductal1,
                                  "activated_stellate" = activated_stellate1,
                                  "endothelial" = endothelial1, "immune" = immune1, 

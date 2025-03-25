@@ -227,28 +227,23 @@ DimPlot(islet57, group.by = "seurat_clusters",
 
 
 # small dotplots ----------------------------------------------------------
-beta1 <- c("IAPP", "INS", "NPTX2")
-delta1 <- c("SST", "RBP4", "PCSK1")
-alpha1 <- c("GCG", "TTR", "MAFB")
-ductal1 <- c("KRT7", "ANXA4", "LCN2")
-acinar1 <- c("REG1A", "PRSS1", "PRSS2")
-endothelial1 <- c("PLVAP", "RGCC", "GNG11")
-immune1 <- c("ACP5", "APOE", "C1QB")
-quiescent_stellate1 <- c("RGS5", "FABP4", "ADIRF")
-activated_stellate1 <- c("COL1A1", "COL6A3", "BGN")
 
-DotPlot(islet57, features = list("beta"=beta1, "alpha" = alpha1, "delta" = delta1,
-                                 "acinar" = acinar1, "ductal" = ductal1,
-                                 "activated_stellate" = activated_stellate1,
-                                 "endothelial" = endothelial1, "immune" = immune1, 
-                                 "quiescent_stellate" = quiescent_stellate1
-))+
-  ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
-                                  high = "#A83708FF")+
-  theme(text = element_text(size = 8),
-        axis.text.y = element_text(size = 8),
-        axis.text.x = element_text(size = 4, 
-                                   angle = 90, vjust = 0.5, hjust = 0.5))
+DotPlot(islet57, features = azi_markers_short, group.by = "manual_anno") +
+  ggplot2::scale_colour_gradient2(
+    low = "#004B7AFF",
+    mid = "#FDFDFCFF",
+    high = "#A83708FF"
+  ) +
+  theme(
+    text = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    axis.text.x = element_text(
+      size = 4,
+      angle = 90,
+      vjust = 0.5,
+      hjust = 0.5
+    )
+  )
 
 
 # Heatmap -----------------------------------------------------------------

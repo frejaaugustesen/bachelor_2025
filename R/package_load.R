@@ -3,6 +3,8 @@ library(valiDrops)
 library(Seurat)
 library(remotes)
 library(qs)
+library(anndata)
+
 
 # XGBoost
 library(data.table) # for reading and manipulation of data 
