@@ -86,7 +86,7 @@ meta_wang <- read.table(here::here("data_raw/wang/meta_donor.csv"),
                    stringsAsFactors = FALSE)
 
 # seeing if i need all of the donors in the meta data or if some needs removing
-length(intersect(wang_beta@meta.data$orig.ident, meta$dono))
+length(intersect(wang_beta@meta.data$orig.ident, meta_wang$donor))
   # all donors in meta data is in the seurat object
 
 # adding disease state to meta data in seurat
@@ -180,10 +180,6 @@ test_wang <- list(matrix = matrix_data_test, vector = label_test)
 # https://github.com/gaoweiwang/Islet_snATACseq/blob/8145d545d979507193fd5bef71b1b4119bed6e66/scripts/AI_subtype.ipynb#L710
 
 ## setting up data ----
-# first creating dataframe with disease and predicted disease 
-M_new <- wang_beta@meta.data #husk at tilføje disease længere oppe
-M_new$pre_disease <- wang_beta@meta.data$disease
-M_new <- dplyr::rename(M_new, donor = orig.ident)
 
 # creating data_use
 # i already have the matrix for train and test in such a matrix...
@@ -213,47 +209,100 @@ wang_beta_sub <- subset(wang_beta, subset = disease != "pre") # used earlier
 wang_meta_T2D_ND <- wang_beta_sub@meta.data
 donor_all <- unique(wang_meta_T2D_ND$orig.ident)
 
-# hvad betyder det her??
-temp_label=rep('no',dim(M_new)[1])
-temp_pro=rep(-1,dim(M_new)[1])
+# first creating dataframe with disease and predicted disease 
+M_new <- wang_beta@meta.data #husk at tilføje disease længere oppe
+M_new$pre_disease <- wang_beta@meta.data$disease
+M_new$subtype <- wang_beta@meta.data$disease
+M_new <- dplyr::rename(M_new, donor = orig.ident)
 
-## setting up loop ----
+#
+stop = 0
+round = 1
+wrong = c()
+while (stop == 0) {
+  message(paste("Running round ", round, sep = ""))
+  # Lav objekter til at tracke labels og probabilities for holdout donor
+  temp_label=rep('no',dim(M_new)[1])
+  temp_pro=rep(-1,dim(M_new)[1])
 
-### loop 1 ----
-for (i in 1:length(donor_all)){
-  keep_1=(as.character(M_new$donor)!=donor_all[i])
-  keep_2=(as.character(M_new$disease)!='pd')
-  keep_3=(as.character(M_new$disease)==as.character(M_new$pre_disease))
+  ### Loop over donors
+  for (i in 1:length(donor_all)){
+    message(paste("\tTraining on donor ", i, sep=""))
+    keep_1=(as.character(M_new$donor)!=donor_all[i])
+    keep_2=(as.character(M_new$disease)!='pre')
+    keep_3=(as.character(M_new$disease)==as.character(M_new$pre_disease))
+    
+    keep_test=(as.character(M_new$donor)==donor_all[i])
+    
+    keep_train=(keep_1 & keep_2 & keep_3)
+    train.x = data_use[keep_train,]
+    test.x = data_use[keep_test,]
+    
+    train_disease=as.character(M_new$disease)
+    train_d=rep(0,length(train_disease))
+    train_d[train_disease=='t2d']=1   
+    train_d[train_disease=='nd']=0  
+    train.y = train_d[keep_train]
+    test.y = train_d[keep_test]
+    
+    train.x1=as(train.x, "dgCMatrix")
+    bst <- xgboost(data = train.x1, label = train.y, max.depth = 60, eta = 0.2, nthread = 24, nrounds = 80, objective = "binary:logistic", verbose = 0)
+    test.x1=as(test.x, "dgCMatrix")
+    pred <- predict(bst, test.x1)
+    
+    pred_label=as.numeric(pred > 0.5)
+    pred_label1=pred_label
+    pred_label1[pred_label==0]='nd' 
+    pred_label1[pred_label==1]='t2d' 
+    
+    temp_label[keep_test]=pred_label1
+    temp_pro[keep_test]=pred
+    
+    M_new$subtype=temp_label 
+    M_new$subtype_probability=temp_pro
+    write.csv(M_new, "/work/bachelor_2025/data/xgboost/loop/M_new.csv")
+  }
   
-  keep_test=(as.character(M_new$donor)==donor_all[i])
-  
-  keep_train=(keep_1 & keep_2 & keep_3)
-  train.x = data_use[keep_train,]
-  test.x = data_use[keep_test,]
-  
-  train_disease=as.character(M_new$disease)
-  train_d=rep(0,length(train_disease))
-  train_d[train_disease=='t2d']=1   
-  train_d[train_disease=='nd']=0  
-  train.y = train_d[keep_train]
-  test.y = train_d[keep_test]
-  
-  train.x1=as(train.x, "dgCMatrix")
-  bst <- xgboost(data = train.x1, label = train.y, max.depth = 60, eta = 0.2, nthread = 24, nrounds = 80, objective = "binary:logistic")
-  test.x1=as(test.x, "dgCMatrix")
-  pred <- predict(bst, test.x1)
-  
-  pred_label=as.numeric(pred > 0.5)
-  pred_label1=pred_label
-  pred_label1[pred_label==0]='nd' 
-  pred_label1[pred_label==1]='t2d' 
-  temp_label[keep_test]=pred_label1
-  temp_pro[keep_test]=pred
-  
-  M_new$subtype=temp_label 
-  M_new$subtype_probability=temp_pro
-  write.csv(M_new, "/work/bachelor_2025/data/xgboost/loop/M_new.csv")
+  # Evaluer om der skal stoppes
+  n_wrong = sum(M_new$subtype != M_new$pre_disease)
+  wrong = c(wrong, n_wrong)
+  message(paste("Number of wrongly assigned cells = ", n_wrong, sep=""))
+  if (n_wrong <= 15) {
+    stop = 1
+  } else {
+    M_new$pre_disease <- M_new$subtype
+    round = round + 1
+  }
 }
+
+
+# Train final model
+message("Training final model.")
+keep_2=(as.character(M_new$disease)!='pre')
+keep_3=(as.character(M_new$disease)==as.character(M_new$pre_disease))
+keep_train=(keep_2 & keep_3)
+train.x = data_use[keep_train,]
+train_disease=as.character(M_new$disease)
+
+train_d=rep(0,length(train_disease))
+train_d[train_disease=='t2d']=1   
+train_d[train_disease=='nd']=0  
+
+train.y = train_d[keep_train]
+train.x1=as(train.x, "dgCMatrix")
+bst <- xgboost(data = train.x1, label = train.y, max.depth = 60, eta = 0.2, nthread = 24, nrounds = 80, objective = "binary:logistic", verbose = 0)
+
+qsave(bst, file = here::here("data/xgboost/finished_model/bst.final.qs"))
+qsave(wrong, file = here::here("data/xgboost/finished_model/wrong_vector.qs"))
+
+# Predict på prediabetes (og de donorer der trænet på)
+keep=(as.character(M_new$disease)=='pre')
+pre.x = data_use[keep,]
+pre.x1=as(pre.x, "dgCMatrix")
+pred <- predict(bst, pre.x1)
+
+rowSums(table(pred > 0.5, M_new[keep, "donor"]))
+table(pred > 0.5, M_new[keep, "donor"])
 
 # tjekker om predicted og subtype er identisk
 M_new_new <- read.csv(here::here("data/xgboost/loop/M_new.csv"))
@@ -390,4 +439,6 @@ for (i in 1:length(donor_all)){
 M_new_new <- read.csv(here::here("data/xgboost/loop/M_new_4.csv"))
 table(M_new_new$disease == M_new_new$subtype)
 
-# skal man blive ved med det her i virkelig mange gange??
+
+
+
