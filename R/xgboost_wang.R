@@ -179,7 +179,7 @@ test_wang <- list(matrix = matrix_data_test, vector = label_test)
 # leave one out analyzis. 
 
 
-# second attempt ----------------------------------------------------------
+# correct attempt ----------------------------------------------------------
 # i will try to attempt to recreate code from the wang sander study
 # https://github.com/gaoweiwang/Islet_snATACseq/blob/8145d545d979507193fd5bef71b1b4119bed6e66/scripts/AI_subtype.ipynb#L710
 
@@ -212,6 +212,8 @@ data_use <- t(data_use)
 wang_beta_sub <- subset(wang_beta, subset = disease != "pre") # used earlier
 wang_meta_T2D_ND <- wang_beta_sub@meta.data
 donor_all <- unique(wang_meta_T2D_ND$orig.ident)
+
+## training model (loop) ------------------------------------------------------
 
 # first creating dataframe with disease and predicted disease 
 M_new <- wang_beta@meta.data #husk at tilføje disease længere oppe
@@ -280,7 +282,7 @@ while (stop == 0) {
 }
 
 
-# Train final model
+## Train final model ----------------------------------------------------------
 message("Training final model.")
 keep_2=(as.character(M_new$disease)!='pre')
 keep_3=(as.character(M_new$disease)==as.character(M_new$pre_disease))
@@ -299,6 +301,8 @@ bst <- xgboost(data = train.x1, label = train.y, max.depth = 60, eta = 0.2, nthr
 qsave(bst, file = here::here("data/xgboost/finished_model/bst.final.qs"))
 qsave(wrong, file = here::here("data/xgboost/finished_model/wrong_vector.qs"))
 
+## prediction -----------------------------------------------------------------
+
 # Predict på prediabetes (og de donorer der trænet på)
 keep=(as.character(M_new$disease)=='pre')
 pre.x = data_use[keep,]
@@ -308,141 +312,9 @@ pred <- predict(bst, pre.x1)
 rowSums(table(pred > 0.5, M_new[keep, "donor"]))
 table(pred > 0.5, M_new[keep, "donor"])
 # false er nd og true t2d
- 
-# tjekker om predicted og subtype er identisk
-M_new_new <- read.csv(here::here("data/xgboost/loop/M_new.csv"))
-table(M_new_new$disease == M_new_new$subtype)
-# det er de ikke og der trænes derfor igen - loop 2
 
-### loop 2 ----
-# renaming new M_new which include subtype
-M_new <- M_new_new
-
-for (i in 1:length(donor_all)){
-  keep_1=(as.character(M_new$donor)!=donor_all[i])
-  keep_2=(as.character(M_new$disease)!='pd')
-  keep_3=(as.character(M_new$disease)==as.character(M_new$subtype))
-  
-  keep_test=(as.character(M_new$donor)==donor_all[i])
-  
-  keep_train=(keep_1 & keep_2 & keep_3)
-  train.x = data_use[keep_train,]
-  test.x = data_use[keep_test,]
-  
-  train_disease=as.character(M_new$disease)
-  train_d=rep(0,length(train_disease))
-  train_d[train_disease=='t2d']=1   
-  train_d[train_disease=='nd']=0  
-  train.y = train_d[keep_train]
-  test.y = train_d[keep_test]
-  
-  train.x1=as(train.x, "dgCMatrix")
-  bst <- xgboost(data = train.x1, label = train.y, max.depth = 60, eta = 0.2, nthread = 24, nrounds = 80, objective = "binary:logistic")
-  test.x1=as(test.x, "dgCMatrix")
-  pred <- predict(bst, test.x1)
-  
-  pred_label=as.numeric(pred > 0.5)
-  pred_label1=pred_label
-  pred_label1[pred_label==0]='nd' 
-  pred_label1[pred_label==1]='t2d' 
-  temp_label[keep_test]=pred_label1
-  temp_pro[keep_test]=pred
-  
-  M_new$subtype=temp_label 
-  M_new$subtype_probability=temp_pro
-  write.csv(M_new, "/work/bachelor_2025/data/xgboost/loop/M_new_2.csv")
-}
-
-# tjekker om predicted og subtype er identisk
-M_new_new <- read.csv(here::here("data/xgboost/loop/M_new_2.csv"))
-table(M_new_new$disease == M_new_new$subtype)
-# det er ca. 50/50 nu... loop 3
-
-### loop 3 ----
-# renaming new M_new which include subtype
-M_new <- M_new_new
-
-for (i in 1:length(donor_all)){
-  keep_1=(as.character(M_new$donor)!=donor_all[i])
-  keep_2=(as.character(M_new$disease)!='pd')
-  keep_3=(as.character(M_new$disease)==as.character(M_new$subtype))
-  
-  keep_test=(as.character(M_new$donor)==donor_all[i])
-  
-  keep_train=(keep_1 & keep_2 & keep_3)
-  train.x = data_use[keep_train,]
-  test.x = data_use[keep_test,]
-  
-  train_disease=as.character(M_new$disease)
-  train_d=rep(0,length(train_disease))
-  train_d[train_disease=='t2d']=1   
-  train_d[train_disease=='nd']=0  
-  train.y = train_d[keep_train]
-  test.y = train_d[keep_test]
-  
-  train.x1=as(train.x, "dgCMatrix")
-  bst <- xgboost(data = train.x1, label = train.y, max.depth = 60, eta = 0.2, nthread = 24, nrounds = 80, objective = "binary:logistic")
-  test.x1=as(test.x, "dgCMatrix")
-  pred <- predict(bst, test.x1)
-  
-  pred_label=as.numeric(pred > 0.5)
-  pred_label1=pred_label
-  pred_label1[pred_label==0]='nd' 
-  pred_label1[pred_label==1]='t2d' 
-  temp_label[keep_test]=pred_label1
-  temp_pro[keep_test]=pred
-  
-  M_new$subtype=temp_label 
-  M_new$subtype_probability=temp_pro
-  write.csv(M_new, "/work/bachelor_2025/data/xgboost/loop/M_new_3.csv")
-}
-
-# tjekker om predicted og subtype er identisk
-M_new_new <- read.csv(here::here("data/xgboost/loop/M_new_3.csv"))
-table(M_new_new$disease == M_new_new$subtype)
-
-### loop 4 ----
-# renaming new M_new which include subtype
-M_new <- M_new_new
-
-for (i in 1:length(donor_all)){
-  keep_1=(as.character(M_new$donor)!=donor_all[i])
-  keep_2=(as.character(M_new$disease)!='pd')
-  keep_3=(as.character(M_new$disease)==as.character(M_new$subtype))
-  
-  keep_test=(as.character(M_new$donor)==donor_all[i])
-  
-  keep_train=(keep_1 & keep_2 & keep_3)
-  train.x = data_use[keep_train,]
-  test.x = data_use[keep_test,]
-  
-  train_disease=as.character(M_new$disease)
-  train_d=rep(0,length(train_disease))
-  train_d[train_disease=='t2d']=1   
-  train_d[train_disease=='nd']=0  
-  train.y = train_d[keep_train]
-  test.y = train_d[keep_test]
-  
-  train.x1=as(train.x, "dgCMatrix")
-  bst <- xgboost(data = train.x1, label = train.y, max.depth = 60, eta = 0.2, nthread = 24, nrounds = 80, objective = "binary:logistic")
-  test.x1=as(test.x, "dgCMatrix")
-  pred <- predict(bst, test.x1)
-  
-  pred_label=as.numeric(pred > 0.5)
-  pred_label1=pred_label
-  pred_label1[pred_label==0]='nd' 
-  pred_label1[pred_label==1]='t2d' 
-  temp_label[keep_test]=pred_label1
-  temp_pro[keep_test]=pred
-  
-  M_new$subtype=temp_label 
-  M_new$subtype_probability=temp_pro
-  write.csv(M_new, "/work/bachelor_2025/data/xgboost/loop/M_new_4.csv")
-}
-
-# tjekker om predicted og subtype er identisk
-M_new_new <- read.csv(here::here("data/xgboost/loop/M_new_4.csv"))
-table(M_new_new$disease == M_new_new$subtype)
+rowSums(table(pred > 0.5, M_new[keep, "donor"]))
+data_use
 
 
 
