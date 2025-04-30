@@ -17,6 +17,7 @@ wang <- qread("/work/bachelor_2025/data/seurat_objects/wang_seurat_QC.qs")
 # save QC  ----------------------------------------------------------------
 # function to save QC as i go
 qsave(wang, file = here::here("data/seurat_objects/wang_seurat_QC.qs"))
+wang <- qread(here::here("data/seurat_objects/wang_seurat_QC.qs"))
 
 
 wang <- qread("/work/bachelor_2025/data/seurat_objects/wang_sander_all_merged.qs")
@@ -94,6 +95,23 @@ DotPlot(wang,
     strip.text = element_text(angle = 45)
   )
 
+DotPlot(wang, 
+        features = azi_markers, group.by = "wang_anno"
+)+
+  ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
+                                  high = "#A83708FF")+
+  ggtitle("Seurat clusters with Azimuth marker genes") +
+  theme(
+    text = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(
+      size = 3.5,
+      angle = 90,
+      vjust = 0.5,
+      hjust = 0.5),
+    strip.text = element_text(angle = 45)
+  )
+
 ## annotation ----
 wang@meta.data <- wang@meta.data %>% 
   dplyr::mutate(wang_anno = dplyr::case_when(
@@ -130,7 +148,6 @@ ggplot(wang@meta.data, aes(x = orig.ident, fill = wang_anno)) +
 
 
 
-# Adding disease state to meta data ---------------------------------------
 
 
 

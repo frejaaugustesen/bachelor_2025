@@ -39,6 +39,10 @@ var_genes <- qread("/work/bachelor_2025/data/var_genes.qs")
 matrix_data_train <- qread("/work/bachelor_2025/data/matrix_data_train.qs")
 matrix_data_test <- qread("/work/bachelor_2025/data/matrix_data_test.qs")
 
+bst <- qread(here::here("data/xgboost/finished_model/bst.final.qs"))
+wrong <- qread(here::here("data/xgboost/finished_model/wrong_vector.qs"))
+
+
 # preprocess --------------------------------------------------------------
 
 head(wang@meta.data)
@@ -303,7 +307,8 @@ pred <- predict(bst, pre.x1)
 
 rowSums(table(pred > 0.5, M_new[keep, "donor"]))
 table(pred > 0.5, M_new[keep, "donor"])
-
+# false er nd og true t2d
+ 
 # tjekker om predicted og subtype er identisk
 M_new_new <- read.csv(here::here("data/xgboost/loop/M_new.csv"))
 table(M_new_new$disease == M_new_new$subtype)
