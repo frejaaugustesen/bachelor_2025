@@ -90,16 +90,16 @@ DimPlot(wang_beta_pre, reduction = "umap",
 
 # finding marker genes ----------------------------------------------------
 wang_beta_pre <- FindVariableFeatures(wang_beta_pre,
-                                  selection.method = "vst", nfeatures = 100)
+                                  selection.method = "vst", nfeatures = 5000)
 
-## laver de 5000 variable gener om til vektorer
-var_genes_50 <- VariableFeatures(wang_beta_pre)
-var_genes_100 <- VariableFeatures(wang_beta_pre)
+var_genes_10 <- head(VariableFeatures(wang_beta_pre), 10)
+var_genes_50 <- head(VariableFeatures(wang_beta_pre), 50)
+var_genes_100 <- head(VariableFeatures(wang_beta_pre), 100)
 
 
 DotPlot(
   wang_beta_pre,
-  features = var_genes_100, group.by = "subtype"
+  features = var_genes_10, group.by = "subtype"
 ) +
   ggplot2::scale_colour_gradient2(
     low = "#004B7AFF",
@@ -118,3 +118,69 @@ DotPlot(
   )
 
 
+# wang study marker genes -------------------------------------------------
+
+wang_genes <- c("INS", "SYT1", "GCK", "PAX6", 
+                "NEUROD1", "NF1", "HNF1A", 
+                "HNF4A", "HNF4G", "NFIA", "TCF4", 
+                "SLC2A2", "SOCS6", "S100A10", "ITPR1",
+                "SLC30A8", "RFX6", "ABCC8", "PCSK1",
+                "DBP", "ELF3", "XBP1", "TFEB", "ETV6", "ATF6")
+
+
+DotPlot(
+  wang_beta_pre,
+  features = wang_genes, group.by = "subtype"
+) +
+  ggplot2::scale_colour_gradient2(
+    low = "#004B7AFF",
+    mid = "#FDFDFCFF",
+    high = "#A83708FF"
+  ) +
+  ggtitle("Markergenes from Wang study on prediabetic donors") +
+  theme(
+    text = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(
+      size = 8,
+      angle = 90,
+      vjust = 0.5,
+      hjust = 0.5)
+  )
+
+# clustering ----
+# PCA
+wang_beta_pre <- RunPCA(wang_beta_pre, features = VariableFeatures(object = wang_beta_pre))
+
+# assesing important PCs
+ElbowPlot(wang_beta_pre) # 1:20
+
+## marker genes 
+wang_beta_pre <- FindNeighbors(wang_beta_pre, dims = 1:20)
+wang_beta_pre <- FindClusters(wang_beta_pre, resolution = 0.2)
+
+## clustering of cells 
+wang_beta_pre <- RunUMAP(wang_beta_pre, dims = 1:20)
+
+DimPlot(wang_beta_pre, reduction = "umap", 
+        label = TRUE)
+
+DotPlot(
+  wang_beta_pre,
+  features = wang_genes, group.by = "seurat_clusters"
+) +
+  ggplot2::scale_colour_gradient2(
+    low = "#004B7AFF",
+    mid = "#FDFDFCFF",
+    high = "#A83708FF"
+  ) +
+  ggtitle("Markergenes from Wang study on prediabetic donors") +
+  theme(
+    text = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(
+      size = 8,
+      angle = 90,
+      vjust = 0.5,
+      hjust = 0.5)
+  )
