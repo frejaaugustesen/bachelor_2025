@@ -137,8 +137,6 @@ norm_counts_t2d %>% dplyr::filter(gene == "INS") %>%
   labs(title = "Expression of INS in subtypes")
 
 ## Go_term_analysis --------------------------------------------------------
-BiocManager::install("clusterProfiler")
-BiocManager::install("org.Hs.eg.db")
 
 # Look both at up and downregulated genes separately - this example is for
 # upregulated genes
@@ -230,8 +228,6 @@ top5_up_t2d <- go_up_t2d@result %>%
 top5_down_t2d <- go_down_t2d@result %>%
   dplyr::arrange(p.adjust) %>%
   head(n = 5)
-
-print(top5_down [, -11])
 
 # ND donors --------------------------------------------------------------
 
@@ -409,7 +405,7 @@ go_up_nd <- clusterProfiler::enrichGO(
   pvalueCutoff  = 0.2,
   qvalueCutoff  = 0.2,
   readable      = TRUE,
-  universe = universe_t2d)
+  universe = universe_nd)
 
 # go-term for biological ontologies
 go_down_nd <- clusterProfiler::enrichGO(
@@ -420,7 +416,7 @@ go_down_nd <- clusterProfiler::enrichGO(
   pvalueCutoff  = 0.2,
   qvalueCutoff  = 0.2,
   readable      = TRUE,
-  universe = universe_t2d)
+  universe = universe_nd)
 
 # Get top 5 go-term
 top5 <- go_up_nd@result %>%
@@ -436,7 +432,6 @@ top5_down_nd <- go_down_nd@result %>%
   dplyr::arrange(p.adjust) %>%
   head(n = 5)
 
-print(top5_down [, -11])
 
 # PRE donors --------------------------------------------------------------
 
@@ -614,7 +609,7 @@ go_up_pre <- clusterProfiler::enrichGO(
   pvalueCutoff  = 0.2,
   qvalueCutoff  = 0.2,
   readable      = TRUE,
-  universe = universe_t2d)
+  universe = universe_pre)
 
 # go-term for biological ontologies
 go_down_pre <- clusterProfiler::enrichGO(
@@ -625,7 +620,7 @@ go_down_pre <- clusterProfiler::enrichGO(
   pvalueCutoff  = 0.2,
   qvalueCutoff  = 0.2,
   readable      = TRUE,
-  universe = universe_t2d)
+  universe = universe_pre)
 
 # Get top 5 go-term
 top5 <- go_up_pre@result %>%
@@ -641,5 +636,4 @@ top5_down_pre <- go_down_pre@result %>%
   dplyr::arrange(p.adjust) %>%
   head(n = 5)
 
-print(top5_down [, -11])
 
