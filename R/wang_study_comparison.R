@@ -61,4 +61,33 @@ DimPlot(wang_beta, reduction = "umap", label = TRUE,
         repel = TRUE)
 
 
+# marker genes ------------------------------------------------------------
+
+Idents(wang_beta) <- "disease"
+wang_beta_t2d <- subset(x = wang_beta, idents = "t2d")
+
+
+## Marker genes ------------------------------------------------------------
+
+Idents(wang_beta_t2d) <- "subtype"
+
+markergenes_t2d <- FindMarkers(wang_beta_t2d, ident.1 = "nd", ident.2 = "t2d", 
+                               group.by = "subtype")
+
+
+
+allmarkers_t2d <- FindAllMarkers(wang_beta_t2d, only.pos = TRUE, min.pct = 0.1)
+
+
+markergenes_t2d_filt <- markergenes_t2d %>%
+  filter(p_val_adj <= 0.05, avg_log2FC > 0) %>%
+  top_n(n = 20, wt = avg_log2FC) %>%
+  tibble::rownames_to_column("gene")
+
+allmarkers_t2d_filt <- allmarkers_t2d %>%
+  filter(p_val_adj <= 0.05) %>%
+  group_by(cluster) %>%
+  top_n(n = 20, wt = avg_log2FC)
+
+
 
