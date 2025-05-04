@@ -143,3 +143,18 @@ motakis_beta@meta.data %>%
     "pre" = "lightgreen",      
     "t2d" = "pink"     
   ))
+
+
+# wang study comparison (UMAP) ---------------------------------------------------
+
+DimPlot(wang_beta, reduction = "umap", label = TRUE,
+        group.by = c("subtype", "study_subtype", "agreement"),
+        label.size = 2.5,
+        repel = TRUE) &
+  NoLegend()
+
+DimPlot(wang_beta, reduction = "umap", label = TRUE,
+        group.by = "agreement",
+        label.size = 2.5,
+        repel = TRUE)
+
