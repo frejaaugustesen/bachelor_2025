@@ -28,6 +28,8 @@ matrix_data_test <- qread("/work/bachelor_2025/data/matrix_data_test.qs")
 bst <- qread(here::here("data/xgboost/finished_model/bst.final.qs"))
 wrong <- qread(here::here("data/xgboost/finished_model/wrong_vector.qs"))
 
+wang_beta_pre <- qread(here::here("data/seurat_objects/wang_beta_pre.qs"))
+
 # saving objects ----
 qsave(wang_beta_pre, file = here::here("data/seurat_objects/wang_beta_pre.qs"))
 
@@ -92,14 +94,29 @@ DimPlot(wang_beta_pre, reduction = "umap",
 wang_beta_pre <- FindVariableFeatures(wang_beta_pre,
                                   selection.method = "vst", nfeatures = 5000)
 
-var_genes_10 <- head(VariableFeatures(wang_beta_pre), 10)
-var_genes_50 <- head(VariableFeatures(wang_beta_pre), 50)
-var_genes_100 <- head(VariableFeatures(wang_beta_pre), 100)
+markergenes <- FindMarkers(wang_beta_pre, ident.1 = "nd", ident.2 = "t2d", 
+                             group.by = "subtype")
+
+Idents(wang_beta_pre) <- "subtype"
+
+allmarkers <- FindAllMarkers(wang_beta_pre, only.pos = TRUE, min.pct = 0.1)
+
+
+markergenes_filt <- markergenes %>%
+  filter(p_val_adj <= 0.05, avg_log2FC > 0) %>%
+  top_n(n = 20, wt = avg_log2FC)
+
+allmarkers_filt <- allmarkers %>%
+  filter(p_val_adj <= 0.05) %>%
+  group_by(cluster) %>%
+  top_n(n = 20, wt = avg_log2FC)
+
+# Lav om med findmarkers funktion
 
 
 DotPlot(
   wang_beta_pre,
-  features = var_genes_10, group.by = "subtype"
+  features = allmarkers_filt$gene, group.by = "subtype"
 ) +
   ggplot2::scale_colour_gradient2(
     low = "#004B7AFF",

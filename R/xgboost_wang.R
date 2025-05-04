@@ -22,6 +22,9 @@ qsave(var_genes, file = here::here("data/var_genes.qs"))
 qsave(matrix_data_train, file = here::here("data/matrix_data_train.qs"))
 qsave(matrix_data_test, file = here::here("data/matrix_data_test.qs"))
 
+qsave(wang_beta, file = here::here("data/seurat_objects/wang_beta_pred.qs"))
+
+
 # load --------------------------------------------------------------------
 
 wang <- qread("/work/bachelor_2025/data/seurat_objects/wang_seurat_QC.qs")
@@ -273,7 +276,7 @@ while (stop == 0) {
   n_wrong = sum(M_new$subtype != M_new$pre_disease)
   wrong = c(wrong, n_wrong)
   message(paste("Number of wrongly assigned cells = ", n_wrong, sep=""))
-  if (n_wrong <= 15) {
+  if (round == 50) {
     stop = 1
   } else {
     M_new$pre_disease <- M_new$subtype
@@ -304,7 +307,7 @@ qsave(wrong, file = here::here("data/xgboost/finished_model/wrong_vector.qs"))
 ## prediction -----------------------------------------------------------------
 
 # Predict på prediabetes (og de donorer der trænet på)
-keep=(as.character(M_new$disease)=='pre')
+keep=as.character(M_new$disease) %in% c("t2d", "nd", "pre")
 pre.x = data_use[keep,]
 pre.x1=as(pre.x, "dgCMatrix")
 pred <- predict(bst, pre.x1)
@@ -313,9 +316,35 @@ rowSums(table(pred > 0.5, M_new[keep, "donor"]))
 table(pred > 0.5, M_new[keep, "donor"])
 # false er nd og true t2d
 
-rowSums(table(pred > 0.5, M_new[keep, "donor"]))
-data_use
+## adding prediction to meta data ------------------------------------
+# nu vil jeg merge predictions fra M_new (for alle) over i metadata
+# alt dette er fra loopet, jeg har genbrugt
+temp_label=rep('no',dim(M_new)[1])
+temp_pro=rep(-1,dim(M_new)[1])
 
+pred_label=as.numeric(pred > 0.5)
+pred_label1=pred_label
+pred_label1[pred_label==0]='nd' 
+pred_label1[pred_label==1]='t2d' 
 
+keep_test=as.character(M_new$disease) %in% c("t2d", "nd", "pre")
 
+temp_label[keep_test]=pred_label1
+temp_pro[keep_test]=pred
+
+M_new_pred <- M_new # denne er ny, for ikke at ødelægge originalen
+
+M_new_pred$subtype=temp_label 
+M_new_pred$subtype_probability=temp_pro
+View(M_new_pred)
+
+M_new_pred <-  M_new_pred %>% 
+  tibble::rownames_to_column("barcode")
+
+# nu har jeg en dataframe som jeg kan bruge til mit meta data i mit seurat objekt
+wang_beta@meta.data <-  wang_beta@meta.data %>% 
+  tibble::rownames_to_column("barcode") %>% 
+  dplyr::left_join(y = M_new_pred %>% select(barcode, subtype, subtype_probability),
+                   by = "barcode") %>% 
+  tibble::column_to_rownames("barcode")
 

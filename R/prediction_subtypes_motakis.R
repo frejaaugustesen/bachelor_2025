@@ -24,6 +24,7 @@ var_genes <- qread("/work/bachelor_2025/data/var_genes.qs")
 
 bst <- qread(here::here("data/xgboost/finished_model/bst.final.qs"))
 wrong <- qread(here::here("data/xgboost/finished_model/wrong_vector.qs"))
+motakis_beta <- qread("/work/bachelor_2025/data/seurat_objects/motakis_beta_integrated.qs")
 
 # saving objects ----
 qsave(motakis_beta, file = here::here("data/seurat_objects/motakis_beta_integrated.qs"))
@@ -53,12 +54,12 @@ motakis_beta <- RunPCA(motakis_beta, features = VariableFeatures(object = motaki
 
 ElbowPlot(motakis_beta) # 1:15
 
-motakis_beta <- FindNeighbors(motakis_beta, dims = 1:15, reduction = "pca")
-motakis_beta <- FindClusters(motakis_beta)
+#motakis_beta <- FindNeighbors(motakis_beta, dims = 1:15, reduction = "pca")
+#motakis_beta <- FindClusters(motakis_beta)
 
-motakis_beta <- RunUMAP(motakis_beta, dims = 1:15)
+#motakis_beta <- RunUMAP(motakis_beta, dims = 1:15)
 
-DimPlot(motakis_beta, reduction = "umap", label = TRUE)
+DimPlot(motakis_beta, reduction = "umap", label = TRUE, group.by = "subtype")
 
 DimPlot(motakis_beta, reduction = "umap", label = TRUE, repel = TRUE,
         label.size = 3,
@@ -75,10 +76,10 @@ motakis_beta <- IntegrateLayers(object = motakis_beta,
 # re-join layers after integration
 motakis_beta[["RNA"]] <- JoinLayers(motakis_beta[["RNA"]])
 
-motakis_beta <- FindNeighbors(motakis_beta, reduction = "HarmonyIntegration", dims = 1:15)
-motakis_beta <- FindClusters(motakis_beta)
+#motakis_beta <- FindNeighbors(motakis_beta, reduction = "HarmonyIntegration", dims = 1:15)
+#motakis_beta <- FindClusters(motakis_beta)
 
-motakis_beta <- RunUMAP(motakis_beta, dims = 1:15, reduction = "HarmonyIntegration")
+#motakis_beta <- RunUMAP(motakis_beta, dims = 1:15, reduction = "HarmonyIntegration")
 
 
 # correct attempt ----------------------------------------------------------
@@ -205,33 +206,6 @@ motakis_beta@meta.data %>%
   group_by(disease, match) %>%
   summarise(n = n(), .groups = "drop")
 
-
-ggplot(motakis_beta@meta.data, aes(x = orig.ident, fill = subtype)) +
-  geom_bar(position = "fill") +
-  facet_wrap(~ disease) +
-  labs(
-    title = "Subtype distribution in prediabetics",
-    x = "Donor",
-    y = "Percentage"
-  ) +
-  theme(axis.text.x = element_text(angle = 45))
-
-motakis_beta@meta.data %>%
-  filter(orig.ident != "" & !is.na(orig.ident)) %>%
-  group_by(disease) %>%
-  filter(orig.ident %in% unique(orig.ident)) %>%  # optional if filtering earlier
-  mutate(orig.ident = factor(orig.ident)) %>%
-  ungroup() %>%
-  ggplot(aes(x = orig.ident, fill = subtype)) +
-  geom_bar(position = "fill") +
-  facet_wrap(~ disease, scales = "free_x") +  # this is the real key: free x-axis per facet
-  labs(
-    title = "Subtype distribution by donor and disease group",
-    x = "Donor",
-    y = "Percentage"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 motakis_beta@meta.data %>%
   group_by(disease) %>%
   mutate(orig.ident = factor(orig.ident)) %>%
@@ -245,7 +219,6 @@ motakis_beta@meta.data %>%
     y = "Percentage"
   ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 
 
 # clustering of subtypes --------------------------------------------------

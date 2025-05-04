@@ -4,6 +4,10 @@ library(Seurat)
 library(remotes)
 library(qs)
 library(anndata)
+library(edgeR)
+library(DESeq2)
+library(clusterProfiler)
+library(org.Hs.eg.db)
 
 
 # XGBoost
