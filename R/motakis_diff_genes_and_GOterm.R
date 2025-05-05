@@ -16,14 +16,14 @@ motakis_beta <- qread("/work/bachelor_2025/data/seurat_objects/motakis_beta_inte
 
 # save --------------------------------------------------------------------
 
-qsave(top5_up_t2d, file = here::here("data/goterm/motakis/top5_up_t2d.qs"))
-qsave(top5_down_t2d, file = here::here("data/goterm/motakis/top5_down_t2d.qs"))
+#qsave(top5_up_t2d, file = here::here("data/goterm/motakis/top5_up_t2d.qs"))
+#qsave(top5_down_t2d, file = here::here("data/goterm/motakis/top5_down_t2d.qs"))
 
-qsave(top5_up_nd, file = here::here("data/goterm/motakis/top5_up_nd.qs"))
-qsave(top5_down_nd, file = here::here("data/goterm/motakis/top5_down_nd.qs"))
+#qsave(top5_up_nd, file = here::here("data/goterm/motakis/top5_up_nd.qs"))
+#qsave(top5_down_nd, file = here::here("data/goterm/motakis/top5_down_nd.qs"))
 
-qsave(top5_up_pre, file = here::here("data/goterm/motakis/top5_up_pre.qs"))
-qsave(top5_down_pre, file = here::here("data/goterm/motakis/top5_down_pre.qs"))
+#qsave(top5_up_pre, file = here::here("data/goterm/motakis/top5_up_pre.qs"))
+#qsave(top5_down_pre, file = here::here("data/goterm/motakis/top5_down_pre.qs"))
 
 # T2D ---------------------------------------------------------------------
 # Subset to only contain real T2D individuals 

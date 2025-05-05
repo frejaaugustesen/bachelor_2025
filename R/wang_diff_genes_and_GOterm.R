@@ -16,14 +16,14 @@ wang_beta <- qread("/work/bachelor_2025/data/seurat_objects/wang_beta_pred.qs")
 
 # save --------------------------------------------------------------------
 
-qsave(top5_up_t2d, file = here::here("data/goterm/top5_up_t2d.qs"))
-qsave(top5_down_t2d, file = here::here("data/goterm/top5_down_t2d.qs"))
+#qsave(top5_up_t2d, file = here::here("data/goterm/top5_up_t2d.qs"))
+#qsave(top5_down_t2d, file = here::here("data/goterm/top5_down_t2d.qs"))
 
-qsave(top5_up_nd, file = here::here("data/goterm/top5_up_nd.qs"))
-qsave(top5_down_nd, file = here::here("data/goterm/top5_down_nd.qs"))
+#qsave(top5_up_nd, file = here::here("data/goterm/top5_up_nd.qs"))
+#qsave(top5_down_nd, file = here::here("data/goterm/top5_down_nd.qs"))
 
-qsave(top5_up_pre, file = here::here("data/goterm/top5_up_pre.qs"))
-qsave(top5_down_pre, file = here::here("data/goterm/top5_down_pre.qs"))
+#qsave(top5_up_pre, file = here::here("data/goterm/top5_up_pre.qs"))
+#qsave(top5_down_pre, file = here::here("data/goterm/top5_down_pre.qs"))
 
 # T2D donors --------------------------------------------------------------
 
@@ -135,6 +135,8 @@ norm_counts_t2d %>% dplyr::filter(gene == "INS") %>%
   geom_bar(stat='summary', fun = "mean") +
   ggplot2::geom_point() +
   labs(title = "Expression of INS in subtypes")
+
+qsave(norm_counts_t2d, here::here("data/goterm/wang/norm_counts_t2d.qs"))
 
 ## Go_term_analysis --------------------------------------------------------
 
