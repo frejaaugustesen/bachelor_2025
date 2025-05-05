@@ -4,3 +4,11 @@
 .Ruserdata
 data
 data_raw
+library
+library2
+library3
+images
+filtered_gene_bc_matrices
+miniconda
+r_library_seurat
+dtrain.buffer
