@@ -12,3 +12,4 @@ filtered_gene_bc_matrices
 miniconda
 r_library_seurat
 dtrain.buffer
+test_data
