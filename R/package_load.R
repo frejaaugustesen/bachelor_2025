@@ -8,6 +8,8 @@ library(edgeR)
 library(DESeq2)
 library(clusterProfiler)
 library(org.Hs.eg.db)
+library(car)
+library(ggpubr)
 
 
 # XGBoost

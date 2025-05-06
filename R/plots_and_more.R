@@ -16,6 +16,20 @@ motakis_beta <- qread("/work/bachelor_2025/data/seurat_objects/motakis_beta_inte
 wang_beta <- qread("/work/bachelor_2025/data/seurat_objects/wang_beta_pred.qs")
 
 
+# renaming subtypes -------------------------------------------------------
+
+
+wang_beta@meta.data <- wang_beta@meta.data %>%
+  mutate(subtype = dplyr::recode(subtype,
+                          "nd" = "beta1",
+                          "t2d" = "beta2"))
+
+
+motakis_beta@meta.data <- motakis_beta@meta.data %>%
+  mutate(subtype = dplyr::recode(subtype,
+                          "nd" = "beta1",
+                          "t2d" = "beta2"))
+
 # Stacked barplots --------------------------------------------------------
 
 # laver om til procent
@@ -37,6 +51,25 @@ motakis_tabel_disease <- motakis_beta@meta.data %>%
 
 table(motakis_beta@meta.data$subtype, motakis_beta@meta.data$disease)
 
+# laver om til procent
+wang_tabel <- wang_beta@meta.data %>% 
+  as.data.frame() %>% 
+  group_by(disease, subtype, orig.ident) %>% 
+  tally() %>% 
+  group_by(orig.ident) %>% 
+  mutate(perc = (n/sum(n)*100), 
+         sum = sum(n))
+
+wang_tabel_disease <- wang_beta@meta.data %>% 
+  as.data.frame() %>% 
+  group_by(disease, subtype) %>% 
+  tally() %>% 
+  group_by(disease) %>% 
+  mutate(perc = (n/sum(n)*100), 
+         sum = sum(n))
+
+table(wang_beta@meta.data$subtype, wang_beta@meta.data$disease)
+
 ## per donor --------------------------------------------------------------
 
 ### wang ----
@@ -54,8 +87,8 @@ wang_beta@meta.data %>%
   ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values = c(
-    "nd" = "lightblue",       
-    "t2d" = "pink"     
+    "beta1" = "lightblue",       
+    "beta2" = "pink"     
   ))
 
 ### motakis ----
@@ -73,8 +106,8 @@ motakis_tabel %>%
   ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values = c(
-    "nd" = "lightblue",       
-    "t2d" = "pink"     
+    "beta1" = "lightblue",       
+    "beta2" = "pink"     
   ))
 
 
@@ -88,16 +121,24 @@ wang_beta@meta.data %>%
   ggplot(aes(x = disease, fill = subtype)) +
   geom_bar(position = "fill") +
   labs(
-    title = "Predicted subtypes per donor (Wang Sander)",
-    x = "Donor",
+    title = "Predicted subtypes per donor in Wang Sander",
+    x = "Disease",
     y = "Percentage"
   ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.background = element_blank(),
+        plot.background = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.line.y = element_line(color = "grey"),  
+        axis.ticks.y = element_line(color = "grey"),
+        axis.ticks.x = element_blank())+
   scale_fill_manual(values = c(
-    "nd" = "lightblue",       
-    "t2d" = "pink"     
+    "beta1" = "lightblue",       
+    "beta2" = "pink"     
   ))
 
+### Motakis ----
 motakis_beta@meta.data %>%
   group_by(disease) %>%
   mutate(orig.ident = factor(orig.ident)) %>%
@@ -105,84 +146,112 @@ motakis_beta@meta.data %>%
   ggplot(aes(x = disease, fill = subtype)) +
   geom_bar(position = "fill") +
   labs(
-    title = "Predicted subtypes per donor (Wang Sander)",
-    x = "Donor",
+    title = "Predicted subtypes per donor in Motakis",
+    x = "Disease",
     y = "Percentage"
   ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.background = element_blank(),
+        plot.background = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.line.y = element_line(color = "grey"),  
+        axis.ticks.y = element_line(color = "grey"),
+        axis.ticks.x = element_blank())+
   scale_fill_manual(values = c(
-    "nd" = "lightblue",       
-    "t2d" = "pink"     
-  ))
-
-### motakis ----
-motakis_tabel_disease %>%
-  #group_by(disease) %>%
-  #mutate(orig.ident = factor(orig.ident)) %>%
-  ungroup() %>%
-  ggplot(aes(x = disease, y=perc, fill = subtype)) +
-  geom_bar(stat = "identity", position = position_dodge()) +
-  geom_point(data = motakis_tabel, aes(x= disease, y = perc, color = subtype,
-                                       alpha = 0.5), 
-             position = position_dodge(width = 1)) +
-  labs(
-    title = "Predicted subtypes per donor (Motakis)",
-    x = "Donor",
-    y = "Percentage"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_manual(values = c(
-    "nd" = "lightblue",       
-    "t2d" = "pink"     
+    "beta1" = "lightblue",       
+    "beta2" = "pink"     
   ))
 
 
 # 2c like figures ---------------------------------------------------------
 
 ## wang ----
-wang_beta@meta.data %>%
-  ggplot(aes(x = subtype, fill = disease)) +  
-  geom_bar(position = position_dodge(width = 0.9)) +
+
+wang_beta1 <- wang_beta1_donor %>% select(disease, perc) %>% mutate(subtype = "beta1")
+wang_beta2 <- wang_beta2_donor %>% select(disease, perc) %>% mutate(subtype = "beta2")
+
+wang_combined_df <- bind_rows(wang_beta1, wang_beta2)
+
+wang_tabel_disease %>% 
+  ggplot(aes(x = subtype, y = perc, fill = disease)) +  
+  geom_col(position = position_dodge(width = 0.9)) +
+  ylim(0, 100) +
+  geom_point(data = wang_combined_df, 
+             aes(x= subtype, y = perc, group = disease), 
+             position = position_dodge(width = 0.9),
+             size = 1, color = "darkgrey", alpha = 0.6) +
   labs(
-    title = "Relative abundance of beta cell subtype in ND, Pre and T2D (Wang Sander)",
+    title = "Subtype distribution in Wang Sander",
     x = "Subtype",
-    y = "Cell count",
+    y = "Percentage",
     fill = "Disease"
   ) +
   theme_minimal() +
   theme(
-    axis.text.x = element_text(size = 10),
+    axis.text.x = element_text(size = 12),
     text = element_text(size = 12),
-    legend.position = "right"
+    legend.position = "right",
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    axis.line.y = element_line(color = "grey"),  
+    axis.ticks.y = element_line(color = "grey")
   ) +
   scale_fill_manual(values = c(
     "nd" = "lightblue",       
     "pre" = "lightgreen",      
     "t2d" = "pink"     
-  ))
+  )) +
+  # Add manual p-value labels
+  annotate("text", x = 0.85, y = 80, label = "P = 0.002", size = 4) +
+  annotate("text", x = 0.85, y = 76, label = "**", size = 5) +
+  annotate("text", x = 1.15, y = 45, label = "P = 0.061", size = 4) +
+  annotate("text", x = 1.85, y = 75, label = "P = 0.002", size = 4) +
+  annotate("text", x = 1.85, y = 71, label = "**", size = 5) +
+  annotate("text", x = 2.15, y = 95, label = "P = 0.061", size = 4)
 
 ## motakis ----
-motakis_beta@meta.data %>%
-  ggplot(aes(x = subtype, fill = disease)) +  
-  geom_bar(position = position_dodge(width = 0.9)) +
-    geom_point()+
+
+
+motakis_beta1 <- motakis_beta1_donor %>% select(disease, perc) %>% mutate(subtype = "beta1")
+motakis_beta2 <- motakis_beta2_donor %>% select(disease, perc) %>% mutate(subtype = "beta2")
+
+motakis_combined_df <- bind_rows(motakis_beta1, motakis_beta2)
+
+motakis_tabel_disease %>% 
+  ggplot(aes(x = subtype, y = perc, fill = disease)) +  
+  geom_col(position = position_dodge(width = 0.9)) +
+  ylim(0, 100) +
+  geom_point(data = motakis_combined_df, 
+             aes(x= subtype, y = perc, group = disease), 
+             position = position_dodge(width = 0.9),
+             size = 1, color = "darkgrey", alpha = 0.6) +
   labs(
-    title = "Relative abundance of beta cell subtype in ND, Pre and T2D (Motakis)",
+    title = "Subtype distribution in Motakis",
     x = "Subtype",
-    y = "Cell count",
+    y = "Percentage",
     fill = "Disease"
   ) +
   theme_minimal() +
   theme(
     axis.text.x = element_text(size = 10),
     text = element_text(size = 12),
-    legend.position = "right"
+    legend.position = "right",
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    axis.line.y = element_line(color = "grey"),  
+    axis.ticks.y = element_line(color = "grey")
   ) +
   scale_fill_manual(values = c(
     "nd" = "lightblue",       
     "pre" = "lightgreen",      
     "t2d" = "pink"     
-  ))
+  )) +
+  # Add manual p-value labels
+  annotate("text", x = 0.85, y = 68, label = "P = 0.735", size = 4) +
+  annotate("text", x = 1.15, y = 58, label = "P = 0.537", size = 4) +
+  annotate("text", x = 1.85, y = 58, label = "P = 0.735", size = 4) +
+  annotate("text", x = 2.15, y = 68, label = "P = 0.537", size = 4)
 
 
 # wang study comparison (UMAP) ---------------------------------------------------
