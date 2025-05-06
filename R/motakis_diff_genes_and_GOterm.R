@@ -653,5 +653,53 @@ top5_down_pre <- go_down_pre@result %>%
   head(n = 5)
 
 
+# all ---------------------------------------------------------------------
+
+## Differentially expressed genes ------------------------------------------
+
+# Prepare data for differential gene expression analysis
+counts <- motakis_beta %>%
+  edgeR::Seurat2PB(sample = "orig.ident",
+                   cluster = "subtype")
+
+# Extract pseudobulk counts
+counts_2 <- counts[["counts"]] %>%
+  as.data.frame() %>%
+  dplyr::rename_with(~gsub("cluster", "", .x))
+
+# Get meta data
+meta_data <- counts[["samples"]] %>%
+  magrittr::set_rownames(base::gsub("cluster", "", BiocGenerics::rownames(.)))
+
+# Check colnames and rownames are equal
+base::all.equal(BiocGenerics::colnames(counts_2), BiocGenerics::rownames(meta_data))
+
+# Create a deseq2 object - paired test (this is why we include sample)
+dds <- DESeq2::DESeqDataSetFromMatrix(
+  countData = counts_2,
+  colData = meta_data,
+  design = stats::as.formula("~ sample + cluster")
+)
+
+# Normalize and run DESeq
+dds <- DESeq2::DESeq(dds)
+
+# Find diff genes between nd and t2d subtypes (gene uprgulatedin nd vs t2d)
+res <- DESeq2::results(dds, contrast = c("cluster", "nd", "t2d"))
+
+# Significant results
+res_sig <- res %>%
+  as.data.frame() %>%
+  dplyr::filter(padj <= 0.05)
+
+# We do not see any significant genes but that also makes sense if we look at the PCA plot:
+
+# Transform using regularised logarithm
+dds_rlog <- DESeq2::rlogTransformation(dds)
+
+# Create PCA plot
+DESeq2::plotPCA(dds_rlog, intgroup="disease")
+
+
 
 

@@ -127,7 +127,7 @@ norm_counts_t2d <- DESeq2::counts(dds_t2d, normalized = TRUE) %>%
   tibble::rownames_to_column("gene")
 
 # Plot expression of your favorite gene
-norm_counts_t2d %>% dplyr::filter(gene == "INS") %>%
+norm_counts_t2d %>% dplyr::filter(gene == "ROR1") %>%
   tidyr::pivot_longer(-gene, names_to = "sample", values_to = "exp") %>%
   dplyr::mutate(subtype = case_when(grepl("nd", sample) ~ "nd",
                                     grepl("t2d", sample) ~ "t2d")) %>%
@@ -144,10 +144,10 @@ qsave(norm_counts_t2d, here::here("data/goterm/wang/norm_counts_t2d.qs"))
 # upregulated genes
 # (it could also be above 0) - these are genes upregulated in nd subtypes
 res_up_t2d <- res_sig_t2d %>%
-  dplyr::filter(log2FoldChange > 1)
+  dplyr::filter(log2FoldChange > 0)
 
 res_down_t2d <- res_sig_t2d %>%
-  dplyr::filter(log2FoldChange < 1)
+  dplyr::filter(log2FoldChange < 0)
 
 # Convert gene symbols to entrez ids
 res_up_t2d$entrez = AnnotationDbi::mapIds(org.Hs.eg.db::org.Hs.eg.db,
@@ -219,6 +219,11 @@ go_down_t2d <- clusterProfiler::enrichGO(
 
 # Get top 5 go-term
 top5 <- go_up_t2d@result %>%
+  dplyr::filter(p.adjust <= 0.05) %>% # hvorfor skal den være under 0.05??
+  dplyr::arrange(p.adjust) %>%
+  head(n = 5)
+
+top5 <- go_down_t2d@result %>%
   dplyr::filter(p.adjust <= 0.05) %>% # hvorfor skal den være under 0.05??
   dplyr::arrange(p.adjust) %>%
   head(n = 5)
