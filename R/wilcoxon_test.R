@@ -230,20 +230,20 @@ pairwise.t.test(wang_beta1_donor$perc, wang_beta1_donor$disease,
 ### assumptions check ----
 
 # 1. Homogeneity of variances
-plot(res.aov_beta1, 1)
+plot(wang_res.aov_beta1, 1)
 # 1. Homogeneity of variances
-plot(res.aov_beta2, 1)
+plot(wang_res.aov_beta2, 1)
 
 # 2. Normality
-plot(res.aov_beta1, 2)
-plot(res.aov_beta2, 2)
+plot(wang_res.aov_beta1, 2)
+plot(wang_res.aov_beta2, 2)
 
 # Extract the residuals
-aov_residuals_beta1 <- residuals(object = res.aov_beta1 )
-aov_residuals_beta2 <- residuals(object = res.aov_beta2 )
+wang_aov_residuals_beta1 <- residuals(object = wang_res.aov_beta1 )
+wang_aov_residuals_beta2 <- residuals(object = wang_res.aov_beta2 )
 # Run Shapiro-Wilk test
-shapiro.test(x = aov_residuals_beta1 )
-shapiro.test(x = aov_residuals_beta2 )
+shapiro.test(x = wang_aov_residuals_beta1 )
+shapiro.test(x = wang_aov_residuals_beta2 )
 
 ### new plot ----
 
@@ -261,7 +261,7 @@ wang_tabel_disease %>%
              position = position_dodge(width = 0.9),
              size = 1, color = "darkgrey", alpha = 0.6) +
   labs(
-    title = "Relative abundance of beta cell subtype in ND, Pre and T2D (Wang Sander)",
+    title = "Subtype distribution in Wang Sander",
     x = "Subtype",
     y = "Percentage",
     fill = "Disease"
@@ -278,12 +278,12 @@ wang_tabel_disease %>%
     "t2d" = "pink"     
   )) +
   # Add manual p-value labels
-  annotate("text", x = 0.85, y = 80, label = "P = 0.002", size = 3) +
-  annotate("text", x = 0.85, y = 76, label = "**", size = 4) +
-  annotate("text", x = 1.15, y = 45, label = "P = 0.061", size = 3) +
-  annotate("text", x = 1.85, y = 75, label = "P = 0.002", size = 3) +
-  annotate("text", x = 1.85, y = 71, label = "**", size = 4) +
-  annotate("text", x = 2.15, y = 95, label = "P = 0.061", size = 3)
+  annotate("text", x = 0.85, y = 80, label = "P = 0.002", size = 4) +
+  annotate("text", x = 0.85, y = 76, label = "**", size = 5) +
+  annotate("text", x = 1.15, y = 45, label = "P = 0.061", size = 4) +
+  annotate("text", x = 1.85, y = 75, label = "P = 0.002", size = 4) +
+  annotate("text", x = 1.85, y = 71, label = "**", size = 5) +
+  annotate("text", x = 2.15, y = 95, label = "P = 0.061", size = 4)
 
 
 ## Motakis ----
@@ -445,20 +445,20 @@ pairwise.t.test(motakis_beta1_donor$perc, motakis_beta1_donor$disease,
 ### assumptions check ----
 
 # 1. Homogeneity of variances
-plot(res.aov_beta1, 1)
+plot(motakis_res.aov_beta1, 1)
 # 1. Homogeneity of variances
-plot(res.aov_beta2, 1)
+plot(motakis_res.aov_beta2, 1)
 
 # 2. Normality
-plot(res.aov_beta1, 2)
-plot(res.aov_beta2, 2)
+plot(motakis_res.aov_beta1, 2)
+plot(motakis_res.aov_beta2, 2)
 
 # Extract the residuals
-aov_residuals_beta1 <- residuals(object = res.aov_beta1 )
-aov_residuals_beta2 <- residuals(object = res.aov_beta2 )
+motakis_aov_residuals_beta1 <- residuals(object = motakis_res.aov_beta1 )
+motakis_aov_residuals_beta2 <- residuals(object = motakis_res.aov_beta2 )
 # Run Shapiro-Wilk test
-shapiro.test(x = aov_residuals_beta1 )
-shapiro.test(x = aov_residuals_beta2 )
+shapiro.test(x = motakis_aov_residuals_beta1 )
+shapiro.test(x = motakis_aov_residuals_beta2 )
 
 ### new plot ----
 
@@ -476,7 +476,7 @@ motakis_tabel_disease %>%
              position = position_dodge(width = 0.9),
              size = 1, color = "darkgrey", alpha = 0.6) +
   labs(
-    title = "Relative abundance of beta cell subtype in ND, Pre and T2D (Wang Sander)",
+    title = "Subtype distribution in Motakis",
     x = "Subtype",
     y = "Percentage",
     fill = "Disease"
@@ -493,9 +493,9 @@ motakis_tabel_disease %>%
     "t2d" = "pink"     
   )) +
   # Add manual p-value labels
-  annotate("text", x = 0.85, y = 68, label = "P = 0.735", size = 3) +
-  annotate("text", x = 1.15, y = 58, label = "P = 0.537", size = 3) +
-  annotate("text", x = 1.85, y = 58, label = "P = 0.735", size = 3) +
-  annotate("text", x = 2.15, y = 68, label = "P = 0.537", size = 3)
+  annotate("text", x = 0.85, y = 68, label = "P = 0.735", size = 4) +
+  annotate("text", x = 1.15, y = 58, label = "P = 0.537", size = 4) +
+  annotate("text", x = 1.85, y = 58, label = "P = 0.735", size = 4) +
+  annotate("text", x = 2.15, y = 68, label = "P = 0.537", size = 4)
 
 
