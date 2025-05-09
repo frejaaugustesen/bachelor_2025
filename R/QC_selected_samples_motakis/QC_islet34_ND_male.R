@@ -92,29 +92,34 @@ islet34@meta.data$log10complexity <- log10(islet34@meta.data$nFeature_RNA)/
 ggplot(data = islet34@meta.data, aes(x=nCount_RNA)) +
   geom_histogram(bins = 200) + 
   geom_vline(xintercept = 7000) +
-  geom_vline(xintercept = 40000)
+  geom_vline(xintercept = 40000) +
+  labs(title = "Motakis, Islet34, nCount_RNA")
 
 
 ### nFeatures_RNA
 ggplot(data = islet34@meta.data, aes(x=nFeature_RNA)) +
   geom_histogram(bins = 100) + 
-  geom_vline(xintercept = 1900)
+  geom_vline(xintercept = 1900)+
+  labs(title = "Motakis, Islet34, nFeature_RNA")
 
 
 ### percent.mt
 ggplot(data = islet34@meta.data, aes(x=percent.mt)) +
   geom_histogram(bins = 100) +
-  geom_vline(xintercept = 15)
+  geom_vline(xintercept = 15) +
+  labs(title = "Motakis, Islet34, percentage of mitochondrial RNA")
 
 ### exon intron ratio
 ggplot(data = islet34@meta.data, aes(x=exon_exonintron)) +
   geom_histogram(bins = 100) +
-  geom_vline(xintercept = 1)
+  geom_vline(xintercept = 1)+
+  labs(title = "Motakis, Islet34, exon exon-intron ratio")
 
 ### complexity
 ggplot(data = islet34@meta.data, aes(x=log10complexity)) +
   geom_histogram(bins = 100) +
-  geom_vline(xintercept = 0.80)
+  geom_vline(xintercept = 0.80)+
+  labs(title = "Motakis, Islet34, complexity")
 
 ## subsetting data ----
 # remember to asses histograms when choosing thresholds

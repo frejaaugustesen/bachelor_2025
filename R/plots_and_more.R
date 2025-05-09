@@ -16,6 +16,11 @@ motakis_beta <- qread("/work/bachelor_2025/data/seurat_objects/motakis_beta_inte
 wang_beta <- qread("/work/bachelor_2025/data/seurat_objects/wang_beta_pred.qs")
 
 
+# save --------------------------------------------------------------------
+qsave(motakis_beta, file = here::here("data/seurat_objects/motakis_beta_new.qs"))
+
+
+
 # renaming subtypes -------------------------------------------------------
 
 
@@ -212,6 +217,9 @@ wang_tabel_disease %>%
 
 ## motakis ----
 
+motakis_beta1 <- motakis_tabel %>% select(disease, perc) %>% mutate(subtype = "beta1")
+motakis_beta2 <- motakis_tabel %>% select(disease, perc) %>% mutate(subtype = "beta2")
+
 
 motakis_beta1 <- motakis_beta1_donor %>% select(disease, perc) %>% mutate(subtype = "beta1")
 motakis_beta2 <- motakis_beta2_donor %>% select(disease, perc) %>% mutate(subtype = "beta2")
@@ -248,10 +256,10 @@ motakis_tabel_disease %>%
     "t2d" = "pink"     
   )) +
   # Add manual p-value labels
-  annotate("text", x = 0.85, y = 68, label = "P = 0.735", size = 4) +
-  annotate("text", x = 1.15, y = 58, label = "P = 0.537", size = 4) +
-  annotate("text", x = 1.85, y = 58, label = "P = 0.735", size = 4) +
-  annotate("text", x = 2.15, y = 68, label = "P = 0.537", size = 4)
+  annotate("text", x = 0.85, y = 72, label = "P = 0.954", size = 4) +
+  annotate("text", x = 1.15, y = 63, label = "P = 0.476", size = 4) +
+  annotate("text", x = 1.85, y = 51, label = "P = 0.954", size = 4) +
+  annotate("text", x = 2.15, y = 60, label = "P = 0.476", size = 4)
 
 
 # wang study comparison (UMAP) ---------------------------------------------------

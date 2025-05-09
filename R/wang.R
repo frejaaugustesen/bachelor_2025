@@ -96,7 +96,7 @@ DotPlot(wang,
   )
 
 DotPlot(wang, 
-        features = azi_markers, group.by = "wang_anno"
+        features = azi_markers, group.by = "seurat_clusters"
 )+
   ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
                                   high = "#A83708FF")+
@@ -115,11 +115,11 @@ DotPlot(wang,
 ## annotation ----
 wang@meta.data <- wang@meta.data %>% 
   dplyr::mutate(wang_anno = dplyr::case_when(
-    seurat_clusters %in% c(0, 4, 5, 8, 13) ~ "beta",
-    seurat_clusters %in% c(1, 2, 3, 10) ~ "alpha",
+    seurat_clusters %in% c(0, 3, 6, 8, 13) ~ "beta",
+    seurat_clusters %in% c(1, 2, 4, 9) ~ "alpha",
     seurat_clusters %in% c(7) ~ "delta",
-    seurat_clusters %in% c(9) ~ "gamma",
-    seurat_clusters %in% c(6) ~"acinar",
+    seurat_clusters %in% c(10) ~ "gamma",
+    seurat_clusters %in% c(5) ~"acinar",
     seurat_clusters %in% c(15) ~ "endothelial",
     seurat_clusters %in% c(12) ~ "stellate",
     seurat_clusters %in% c(14) ~ "immune",
@@ -146,6 +146,9 @@ ggplot(wang@meta.data, aes(x = orig.ident, fill = wang_anno)) +
   ) +
   theme(axis.text.x = element_text(angle = 45))
 
+
+
+# agreement ---------------------------------------------------------------
 
 
 

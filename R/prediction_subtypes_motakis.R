@@ -63,7 +63,7 @@ DimPlot(motakis_beta, reduction = "umap", label = TRUE, group.by = "subtype")
 
 DimPlot(motakis_beta, reduction = "umap", label = TRUE, repel = TRUE,
         label.size = 3,
-        group.by = "manual_anno") +
+        group.by = "merged_anno") +
   NoLegend()
 
 # integration
@@ -220,6 +220,14 @@ motakis_beta@meta.data %>%
   ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+motakis_beta@meta.data <- motakis_beta@meta.data %>%
+  mutate(subtype = recode(subtype,
+                              "nd" = "beta1",
+                              "t2d" = "beta2"))
+motakis_beta@meta.data <- motakis_beta@meta.data %>%
+  mutate(subtype = recode(subtype,
+                          "beta1" = "nd",
+                          "beta2" = "t2d"))
 
 # clustering of subtypes --------------------------------------------------
 DimPlot(motakis_beta, reduction = "umap", group.by = "subtype")

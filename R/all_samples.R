@@ -6,8 +6,12 @@ source(here::here("R/package_load.R"))
 source(here::here("R/cell_types.R"))
 
 set.seed(100)
- 
+
 # save QC ---------------------------
+# newest version
+qsave(islet_all, file = "/work/bachelor_2025/data/seurat_objects/motakis/islet_all_QC_new.qs")
+
+
 # subset 
 qsave(islet_all, file = "/work/bachelor_2025/data/seurat_objects/motakis/islet_all_subset.qs")
 islet_all <- qread("/work/bachelor_2025/data/seurat_objects/motakis/islet_all_subset.qs")
@@ -388,6 +392,7 @@ islet_all <- merge(islet57,
 
 qsave(islet_all, file = "/work/bachelor_2025/data/seurat_objects/motakis/islet_all.qs")
 islet_all <- qread("/work/bachelor_2025/data/seurat_objects/motakis/islet_all.qs")
+before <- qread("/work/bachelor_2025/data/seurat_objects/motakis/islet_all.qs")
 
 # integration with harmony ------------------------------------------------
 
@@ -418,19 +423,22 @@ islet_all <- ScaleData(islet_all,
 
 islet_all <- RunPCA(islet_all, features = VariableFeatures(object = islet_all))
 
-# ElbowPlot(islet_all) # 1:15
+ElbowPlot(islet_all) # 1:15
 
 # islet_all <- FindNeighbors(islet_all, dims = 1:15, reduction = "pca")
 # islet_all <- FindClusters(islet_all)
 
 islet_all <- RunUMAP(islet_all, dims = 1:15)
 
-DimPlot(islet_all, reduction = "umap", label = TRUE)
+DimPlot(islet_all, reduction = "umap", label = TRUE, group.by = "seurat_clusters") +
+  NoLegend()
 
 DimPlot(islet_all, reduction = "umap", label = TRUE, repel = TRUE,
         label.size = 3,
         group.by = "manual_anno") +
   NoLegend()
+
+before <- islet_all
 
 # integration
 islet_all <- IntegrateLayers(object = islet_all, 
@@ -449,6 +457,11 @@ islet_all <- RunUMAP(islet_all, dims = 1:15, reduction = "HarmonyIntegration")
 
 # Visualization
 DimPlot(islet_all, reduction = "umap", group.by = c("orig.ident", "seurat_clusters"))
+DimPlot(before, reduction = "umap", group.by = c("orig.ident", "seurat_clusters"))
+
+
+DimPlot(islet_all, reduction = "umap", group.by = "seurat_clusters")
+
 
 DimPlot(islet_all, reduction = "umap", repel = TRUE,
         label.size = 3,
@@ -484,7 +497,6 @@ islet_all@meta.data <-  islet_all@meta.data %>% dplyr::select(-ends_with(".x"), 
 
 ## removing motakis data to avoid confusion
 
-
 islet_all <- islet_all %>%
   Seurat::FindNeighbors(reduction = "pca",
                         dims = 1:15) %>%
@@ -513,6 +525,8 @@ avg.scaled <- t(scale(t(avg)))
 db_cluster <-
   names(which(colSums(avg.scaled[rownames(avg.scaled) %in% markers, ] > 0.6) > 1))
 
+db_cluster_clean <- gsub("^g", "", db_cluster)
+
 # save expression of marker genes
 avg_scaled_df <- avg.scaled[rownames(avg.scaled) %in% markers, ] %>%
   as.data.frame() %>%
@@ -520,8 +534,8 @@ avg_scaled_df <- avg.scaled[rownames(avg.scaled) %in% markers, ] %>%
 
 # Plot doublets -----------------------------------------------------------
 islet_all@meta.data <- islet_all@meta.data %>% 
-  dplyr::mutate(multiplet = dplyr::case_when(RNA_snn_res.20 %in% db_cluster ~ "multiplet",
-                                             !RNA_snn_res.20 %in% db_cluster ~ "singlet"))
+  dplyr::mutate(multiplet = dplyr::case_when(RNA_snn_res.20 %in% db_cluster_clean ~ "multiplet",
+                                             !RNA_snn_res.20 %in% db_cluster_clean ~ "singlet"))
 
 ## Doublet umap ----
 DimPlot(islet_all, reduction = "umap", group.by = "multiplet")
@@ -537,14 +551,16 @@ islet_all <- subset(islet_all, subset = multiplet == "singlet")
 
 # dotplot ----
 
+islet_all <- FindClusters(islet_all, resolution = 0.5)
+
 DotPlot(islet_all, 
-                    features = azi_markers, group.by = "manual_anno"
+                    features = azi_markers, group.by = "seurat_clusters"
                     )+
   ggplot2::scale_colour_gradient2(low = "#004B7AFF", mid = "#FDFDFCFF", 
                                   high = "#A83708FF")+
   theme(text = element_text(size = 10),
         axis.text.y = element_text(size = 8),
-        axis.text.x = element_text(size = 3.5))
+        axis.text.x = element_text(size = 3.5, angle = 90))
 
 # (Annotation) --------------------------------------------------------------
 
@@ -563,21 +579,20 @@ DotPlot(islet_all,
 
 islet_all@meta.data <- islet_all@meta.data %>% 
   dplyr::mutate(merged_anno = dplyr::case_when(
-  seurat_clusters %in% c(0, 1, 2, 10) ~ "alpha",
-  seurat_clusters %in% c(6) ~ "beta",
-  seurat_clusters %in% c(3) ~ "delta",
-  seurat_clusters %in% c(9) ~"gamma",
-  seurat_clusters %in% c(16) ~ "alpha_cycling",
-  seurat_clusters %in% c(5) ~"acinar",
-  seurat_clusters %in% c(12, 15) ~"endothelial",
-  seurat_clusters %in% c(14) ~ "stellate",
-  seurat_clusters %in% c(7) ~"activated_stellate",
-  seurat_clusters %in% c(13) ~"immune",
-  seurat_clusters %in% c(4, 8, 11) ~ "ductal",
-  seurat_clusters %in% c(17) ~ "schwann"
+  seurat_clusters %in% c(7) ~ "beta",
+  seurat_clusters %in% c(8, 3, 2, 0) ~ "alpha",
+  seurat_clusters %in% c(4) ~ "delta",
+  seurat_clusters %in% c(11) ~"gamma",
+  seurat_clusters %in% c(15) ~ "cycling",
+  seurat_clusters %in% c(6) ~"acinar",
+  seurat_clusters %in% c(14, 10) ~"endothelial",
+  seurat_clusters %in% c(13) ~ "quiescent_stellate",
+  seurat_clusters %in% c(5) ~"activated_stellate",
+  seurat_clusters %in% c(12) ~"immune",
+  seurat_clusters %in% c(9, 1) ~ "ductal",
 ), merged_anno = factor(merged_anno, levels = c("beta", "alpha","alpha_cycling",
                                             "delta", "gamma", "acinar", "endothelial",
-                                            "stellate", "activated_stellate",
+                                            "quiescent_stellate", "activated_stellate",
                                             "immune", "ductal", "schwann")))
 
 DimPlot(islet_test2, group.by = "seurat_clusters", reduction = "umap") 
@@ -603,9 +618,9 @@ DotPlot(
   )
 
 # replacing NA with "no annotation"
-islet_all@meta.data <- islet_test2@meta.data %>%
-  mutate(motakis_anno = ifelse(is.na(motakis_anno), 
-                              "no annotation", motakis_anno))
+islet_all@meta.data <- islet_all@meta.data %>%
+  mutate(merged_anno = ifelse(is.na(merged_anno), 
+                              "no annotation", merged_anno))
 
 # Feature Plot ---------------------------------------------------
 
@@ -668,7 +683,7 @@ islet_all@meta.data <- islet_df_2
 all.equal(colnames(islet_all), rownames(islet_df_2))
 
 DimPlot(islet_all, reduction = "umap", label = TRUE,
-        group.by = c("manual_anno", "motakis_anno", "agreement"),
+        group.by = c("merged_anno", "motakis_anno", "agreement"),
         label.size = 2.5,
         repel = TRUE) & 
   NoLegend()
@@ -691,24 +706,23 @@ islet_all@meta.data %>%
 head(islet_all@meta.data)
 
 # cell type distribution --------------------------------------------
-table(islet_all@meta.data$manual_anno)
+table(islet_all@meta.data$merged_anno)
 
 # per sample
-ggplot(islet_all@meta.data, aes(x = orig.ident, fill = manual_anno)) +
+ggplot(islet_all@meta.data, aes(x = orig.ident, fill = merged_anno)) +
   geom_bar(position = "fill") +
   scale_y_continuous(labels = percent_format()) +
-  scale_fill_manual(values = dark_palette) +
   labs(
     title = "Cell type distribution by sample",
     x = "Sample",
     y = "Percentage"
-  )
+  ) +
+  theme(axis.text.x = element_text(angle = 45))
 
 # per disease
-ggplot(islet_all@meta.data, aes(x = disease, fill = manual_anno)) +
+ggplot(islet_all@meta.data, aes(x = disease, fill = merged_anno)) +
   geom_bar(position = "fill") +
   scale_y_continuous(labels = percent_format()) +
-  scale_fill_manual(values = dark_palette) +
   labs(
     title = "Cell type distribution by disease state",
     x = "Disease state",
@@ -716,10 +730,9 @@ ggplot(islet_all@meta.data, aes(x = disease, fill = manual_anno)) +
   )
 
 # overall
-ggplot(islet_all@meta.data, aes(x = "", fill = manual_anno)) +
+ggplot(islet_all@meta.data, aes(x = "", fill = merged_anno)) +
   geom_bar(position = "fill") +
   scale_y_continuous(labels = percent_format()) +
-  scale_fill_manual(values = dark_palette) +
   labs(
     title = "Cell type distribution overall",
     x = "islet_all",

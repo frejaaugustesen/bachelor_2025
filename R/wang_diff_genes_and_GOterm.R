@@ -643,4 +643,213 @@ top5_down_pre <- go_down_pre@result %>%
   dplyr::arrange(p.adjust) %>%
   head(n = 5)
 
+# ALL samples markergenes -------------------------------------------------
+
+# Subset to only contain real T2D individuals 
+# (Jeg tror måske det er bedre at sammenligne subtyper, for hver disease?)
+Idents(wang_beta) <- "disease"
+
+## Marker genes ------------------------------------------------------------
+Idents(wang_beta) <- "subtype"
+
+markergenes <- FindMarkers(wang_beta, ident.1 = "nd", ident.2 = "t2d", 
+                           group.by = "subtype")
+
+
+
+allmarkers <- FindAllMarkers(wang_beta, only.pos = TRUE, min.pct = 0.1)
+
+
+markergenes_filt <- markergenes %>%
+  filter(p_val_adj <= 0.05, avg_log2FC > 0) %>%
+  top_n(n = 20, wt = avg_log2FC) %>%
+  tibble::rownames_to_column("gene")
+
+allmarkers_filt <- allmarkers %>%
+  filter(p_val_adj <= 0.05) %>%
+  group_by(cluster) %>%
+  top_n(n = 20, wt = avg_log2FC)
+
+
+DotPlot(
+  wang_beta,
+  features = allmarkers_filt$gene, group.by = "subtype"
+) +
+  ggplot2::scale_colour_gradient2(
+    low = "#004B7AFF",
+    mid = "#FDFDFCFF",
+    high = "#A83708FF"
+  ) +
+  ggtitle("Markergenes in subtypes (FindAllMarkers,only.pos = TRUE, min.pct = 0.1)") +
+  theme(
+    text = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(
+      size = 8,
+      angle = 90,
+      vjust = 0.5,
+      hjust = 0.5)
+  )
+
+
+## Differentially expressed genes ------------------------------------------
+
+# Prepare data for differential gene expression analysis
+counts <- wang_beta %>%
+  edgeR::Seurat2PB(sample = "orig.ident",
+                   cluster = "subtype")
+
+# Extract pseudobulk counts
+counts_2 <- counts[["counts"]] %>%
+  as.data.frame() %>%
+  dplyr::rename_with(~gsub("cluster", "", .x))
+
+# Get meta data
+meta_data <- counts[["samples"]] %>%
+  magrittr::set_rownames(base::gsub("cluster", "", BiocGenerics::rownames(.)))
+
+# Check colnames and rownames are equal
+base::all.equal(BiocGenerics::colnames(counts_2), BiocGenerics::rownames(meta_data))
+
+# Create a deseq2 object - paired test (this is why we include sample)
+dds <- DESeq2::DESeqDataSetFromMatrix(
+  countData = counts_2,
+  colData = meta_data,
+  design = stats::as.formula("~ sample + cluster")
+)
+
+# Normalize and run DESeq
+dds <- DESeq2::DESeq(dds)
+
+# Find diff genes between nd and t2d subtypes (gene uprgulatedin nd vs t2d)
+res <- DESeq2::results(dds, contrast = c("cluster", "nd", "t2d"))
+
+# Significant results
+res_sig <- res %>%
+  as.data.frame() %>%
+  dplyr::filter(padj <= 0.05)
+
+# Transform using regularised logarithm
+dds_rlog <- DESeq2::rlogTransformation(dds)
+
+# Create PCA plot
+DESeq2::plotPCA(dds_rlog, intgroup="cluster")
+
+
+## Get normalized counts ---------------------------------------------------
+norm_counts <- DESeq2::counts(dds, normalized = TRUE) %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("gene")
+
+# Plot expression of your favorite gene
+norm_counts %>% dplyr::filter(gene == "OXR1") %>%
+  tidyr::pivot_longer(-gene, names_to = "sample", values_to = "exp") %>%
+  dplyr::mutate(subtype = case_when(grepl("nd", sample) ~ "nd",
+                                    grepl("t2d", sample) ~ "t2d")) %>%
+  ggplot2::ggplot(aes(x = subtype, y = exp)) +
+  geom_bar(stat='summary', fun = "mean") +
+  ggplot2::geom_point()+
+  ggtitle("wang subtypes, gene OXR1")
+
+
+
+## Go_term_analysis --------------------------------------------------------
+
+# Look both at up and downregulated genes separately - this example is for
+# upregulated genes
+# (it could also be above 0) - these are genes upregulated in nd subtypes
+res_up <- res_sig %>%
+  dplyr::filter(log2FoldChange > 1)
+
+res_down <- res_sig %>%
+  dplyr::filter(log2FoldChange < -1)
+
+# Convert gene symbols to entrez ids
+res_up$entrez = AnnotationDbi::mapIds(org.Hs.eg.db::org.Hs.eg.db,
+                                      keys=rownames(res_up),
+                                      column="ENTREZID",
+                                      keytype="SYMBOL",
+                                      multiVals="first")
+
+res_down$entrez = AnnotationDbi::mapIds(org.Hs.eg.db::org.Hs.eg.db,
+                                        keys=rownames(res_down),
+                                        column="ENTREZID",
+                                        keytype="SYMBOL",
+                                        multiVals="first")
+
+# Background genes - all genes that were tested
+res$entrez = AnnotationDbi::mapIds(org.Hs.eg.db::org.Hs.eg.db,
+                                   keys=rownames(res),
+                                   column="ENTREZID",
+                                   keytype="SYMBOL",
+                                   multiVals="first")
+# Universe
+universe <- res %>%
+  as.data.frame() %>%
+  filter(!is.na(entrez)) %>%
+  pull(entrez) %>%
+  unlist() %>%
+  unname() %>%
+  unique()
+
+# genes up
+genes_up <- res_up%>%
+  as.data.frame() %>%
+  filter(!is.na(entrez)) %>%
+  pull(entrez) %>%
+  unlist() %>%
+  unname() %>%
+  unique()
+
+# genes down
+genes_down <- res_down %>%
+  as.data.frame() %>%
+  filter(!is.na(entrez)) %>%
+  pull(entrez) %>%
+  unlist() %>%
+  unname() %>%
+  unique()
+
+# go-term for biological ontologies
+go_up <- clusterProfiler::enrichGO(
+  gene = genes_up,
+  OrgDb = "org.Hs.eg.db",
+  pAdjustMethod = "fdr",
+  ont = "BP",
+  pvalueCutoff  = 0.2,
+  qvalueCutoff  = 0.2,
+  readable      = TRUE,
+  universe = universe)
+
+# go-term for biological ontologies
+go_down <- clusterProfiler::enrichGO(
+  gene = genes_down,
+  OrgDb = "org.Hs.eg.db",
+  pAdjustMethod = "fdr",
+  ont = "BP",
+  pvalueCutoff  = 0.2,
+  qvalueCutoff  = 0.2,
+  readable      = TRUE,
+  universe = universe)
+
+# Get top 5 go-term
+top5_up <- go_up@result %>%
+  dplyr::filter(p.adjust <= 0.05) %>% # hvorfor skal den være under 0.05??
+  dplyr::arrange(p.adjust) %>%
+  head(n = 5)
+
+top5_down <- go_down@result %>%
+  dplyr::filter(p.adjust <= 0.05) %>% # hvorfor skal den være under 0.05??
+  dplyr::arrange(p.adjust) %>%
+  head(n = 5)
+
+#top5_up <- go_up@result %>%
+# dplyr::arrange(p.adjust) %>%
+#head(n = 5)
+
+#top5_down <- go_down@result %>%
+#dplyr::arrange(p.adjust) %>%
+#head(n = 5)
+
+
 

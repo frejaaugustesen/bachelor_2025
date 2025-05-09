@@ -323,6 +323,10 @@ print(samples %>%
         select(donor, disease, sex))
 
 saveRDS(samples, file = here::here("data/rds_files/selected_samples_df.rds"))
+df <- readRDS(here::here("data/rds_files/selected_samples_df.rds"))
+
+print(df %>% 
+        select(donor, disease, sex))
 
 # lav QC for alle prøverne individuelt (i hver sit script)
 # gem alle plots (QC, heatmaps, dotplots, threshold, PCA (elbowplots))
