@@ -31,13 +31,26 @@ ggscatter(motakis_tabel, x = "perc", y = "hba1c_.",
           add = "reg.line") +
   stat_cor(method = "pearson")
 
+ggscatter(motakis_tabel, x = "perc", y = "hba1c_.", color = "disease",
+          add = "reg.line") +
+  stat_cor(method = "pearson")
+
 ggscatter(motakis_tabel, x = "perc", y = "bmi",
+          add = "reg.line") +
+  stat_cor(method = "pearson")
+
+ggscatter(motakis_tabel, x = "perc", y = "bmi", color = "disease",
           add = "reg.line") +
   stat_cor(method = "pearson")
 
 ggscatter(motakis_tabel, x = "perc", y = "age_years",
           add = "reg.line") +
   stat_cor(method = "pearson")
+
+ggscatter(motakis_tabel, x = "perc", y = "age_years", color = "disease",
+          add = "reg.line") +
+  stat_cor(method = "pearson")
+
 
 
 ## gentag for wang
@@ -58,16 +71,26 @@ ggscatter(wang_tabel, x = "perc", y = "hba1c_.",
           add = "reg.line") +
   stat_cor(method = "pearson")
 
+ggscatter(wang_tabel, x = "perc", y = "hba1c_.", color = "disease.x",
+          add = "reg.line") +
+  stat_cor(method = "pearson")
+
 ggscatter(wang_tabel, x = "perc", y = "bmi",
+          add = "reg.line") +
+  stat_cor(method = "pearson")
+
+ggscatter(wang_tabel, x = "perc", y = "bmi", color = "disease.x",
           add = "reg.line") +
   stat_cor(method = "pearson")
 
 ggscatter(wang_tabel, x = "perc", y = "age_years",
           add = "reg.line") +
   stat_cor(method = "pearson") 
-# find ud af at farve efter disease
-  scale_fill_manual(values = c(nd = "pink", pre = "lightgreen", t2d = "lightblue"))
-  
+
+ggscatter(wang_tabel, x = "perc", y = "age_years", color = "disease.x",
+          add = "reg.line") +
+  stat_cor(method = "pearson") 
+
 
 # gener -------------------------------------------------------------------
 
