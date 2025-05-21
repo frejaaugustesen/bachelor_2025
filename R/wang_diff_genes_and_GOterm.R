@@ -727,7 +727,7 @@ res <- DESeq2::results(dds, contrast = c("cluster", "nd", "t2d"))
 # Significant results
 res_sig <- res %>%
   as.data.frame() %>%
-  dplyr::filter(padj <= 0.05)
+  dplyr::filter(padj <= 0.05 ) 
 
 # Transform using regularised logarithm
 dds_rlog <- DESeq2::rlogTransformation(dds)

@@ -56,10 +56,16 @@ DimPlot(wang_beta, reduction = "umap", label = TRUE,
   NoLegend()
 
 DimPlot(wang_beta, reduction = "umap", label = TRUE,
-        group.by = "agreement",
+        group.by = "agreement", split.by = "disease",
         label.size = 2.5,
         repel = TRUE)
 
+agree_wang <- table(wang_beta@meta.data$agreement, 
+               wang_beta@meta.data$disease) %>% 
+  as.data.frame() %>% 
+  rename(agreement = Var1, disease = Var2) %>% 
+  group_by(disease) %>%
+  mutate(perc = Freq / sum(Freq) * 100)
 
 # marker genes ------------------------------------------------------------
 

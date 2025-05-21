@@ -10,7 +10,7 @@ set.seed(100)
 # save QC ---------------------------
 # newest version
 qsave(islet_all, file = "/work/bachelor_2025/data/seurat_objects/motakis/islet_all_QC_new.qs")
-
+islet_all <- qread("/work/bachelor_2025/data/seurat_objects/motakis/islet_all_QC_new.qs")
 
 # subset 
 qsave(islet_all, file = "/work/bachelor_2025/data/seurat_objects/motakis/islet_all_subset.qs")
@@ -35,6 +35,7 @@ islet52 <- readRDS(here::here("data/seurat_objects/motakis/selected_samples/isle
 islet44 <- readRDS(here::here("data/seurat_objects/motakis/selected_samples/islet44_seurat_QC.rds"))
 islet128 <- readRDS(here::here("data/seurat_objects/motakis/selected_samples/islet128_seurat_QC.rds"))
 
+motakis <- qread("/work/bachelor_2025/data/seurat_objects/motakis/islet_all_QC_new.qs")
 
 # saving UMAPS with annotations ----
 
@@ -590,12 +591,12 @@ islet_all@meta.data <- islet_all@meta.data %>%
   seurat_clusters %in% c(5) ~"activated_stellate",
   seurat_clusters %in% c(12) ~"immune",
   seurat_clusters %in% c(9, 1) ~ "ductal",
-), merged_anno = factor(merged_anno, levels = c("beta", "alpha","alpha_cycling",
-                                            "delta", "gamma", "acinar", "endothelial",
-                                            "quiescent_stellate", "activated_stellate",
-                                            "immune", "ductal", "schwann")))
+), merged_anno = factor(merged_anno, levels = c("beta", "alpha", "delta","gamma",
+                                                "cycling", "acinar", "endothelial",
+                                                "quiescent_stellate", "activated_stellate",
+                                                "immune", "ductal")))
 
-DimPlot(islet_test2, group.by = "seurat_clusters", reduction = "umap") 
+DimPlot(islet_all, group.by = "merged_anno", reduction = "umap", label = TRUE) + NoLegend() 
 
 DotPlot(
   islet_test2,
@@ -688,9 +689,42 @@ DimPlot(islet_all, reduction = "umap", label = TRUE,
         repel = TRUE) & 
   NoLegend()
 
+DimPlot(motakis, reduction = "umap", label = TRUE,
+        group.by = c("merged_anno", "motakis_anno", "agreement"),
+        label.size = 2.5,
+        repel = TRUE) & 
+  NoLegend()
+
+DimPlot(motakis, reduction = "umap", label = TRUE,
+        group.by = "agreement", split.by = "disease")
+
+DimPlot(
+  subset(motakis, subset = agreement %in% c("yes", "no")),
+  reduction = "umap", label = TRUE,
+  group.by = "agreement", split.by = "disease"
+)
+
+motakis@meta.data %>% 
+  group_by(agreement) %>% 
+  tally() %>% 
+  mutate(perc_agree = round((n/sum(n))*100, 2))
+
+motakis@meta.data %>% 
+  group_by(agreement) %>% 
+  tally() %>% 
+  mutate(perc_agree = round((n/sum(n))*100, 2),
+         total = sum(n)) 
+
+agree <- table(motakis@meta.data$agreement, 
+               motakis@meta.data$disease) %>% 
+  as.data.frame() %>% 
+  rename(agreement = Var1, disease = Var2) %>% 
+  group_by(disease) %>%
+  mutate(perc = Freq / sum(Freq) * 100)
 
 # 2 funktioner for det samme
-table(islet_all@meta.data$agreement, islet_all@meta.data$manual_anno)
+table(islet_all@meta.data$agreement, 
+               islet_all@meta.data$manual_anno)
 
 islet_all@meta.data %>% 
   group_by(agreement, manual_anno) %>% 

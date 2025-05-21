@@ -40,7 +40,7 @@ motakis_beta@meta.data <- motakis_beta@meta.data %>%
 # laver om til procent
 motakis_tabel <- motakis_beta@meta.data %>% 
   as.data.frame() %>% 
-  group_by(disease, subtype, orig.ident) %>% 
+  group_by(disease, subtype, orig.ident, sample) %>% 
   tally() %>% 
   group_by(orig.ident) %>% 
   mutate(perc = (n/sum(n)*100), 
