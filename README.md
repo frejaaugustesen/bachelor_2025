@@ -18,3 +18,5 @@ the findings suggest transcriptional heterogeneity among β-cells and a possible
 gression, the evidence for distinct, reproducible subtypes remains inconclusive. Further validation
 across larger and more diverse cohorts is required to determine these subtypes' robustness and bio-
 logical relevance.
+
+![illustration of work](https://github.com/frejaaugustesen/bachelor_2025/blob/main/bachelor_workflow.png)
